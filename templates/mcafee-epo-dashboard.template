@@ -125,7 +125,7 @@ Parameters:
     Type: String
   HostedZoneID:
     Description: EPO Solution AWS Route 53 Public hosted zone ID.
-    MinLength: 1
+    Default: ''
     MaxLength: 256
     Type: String
   ParentStackID:
@@ -205,6 +205,12 @@ Parameters:
       lowercase letters, uppercase letters, hyphens, and forward slashes.'
     Type: String
 
+Conditions:
+  cGovCloudCondition: !Or
+    - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
+    - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
+  cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
+
 Resources:
   # Update AWS Cloudwatch Dashboard lambda Role
   DashboardUpdateLambdaRole:
@@ -237,11 +243,17 @@ Resources:
                 Resource:
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref QSS3BucketName
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref QSS3BucketName
                       - '/*'
               - Effect: Allow
@@ -301,7 +313,10 @@ Resources:
       ServiceToken:  !GetAtt DashboardUpdateLambda.Arn
       SourceBucket: !Sub ${QSS3BucketName}
       KeyPrefix: !Sub ${QSS3KeyPrefix}
-      DashboardPath: !Sub ${QSS3KeyPrefix}assets/dashboard/json/mcafee_solution_dashboard.json
+      DashboardPath: !If
+            - cNotGovCloudCondition
+            - !Sub ${QSS3KeyPrefix}assets/dashboard/json/mcafee_solution_dashboard.json
+            - !Sub ${QSS3KeyPrefix}assets/dashboard/json/mcafee_solution_dashboard_gov_cloud.json
       DashboardName: !Sub ${ParentStack}_${AWS::Region}
       ParentStack: !Sub ${ParentStack}
       ParentStackID: !Sub ${ParentStackID}
@@ -339,4 +354,7 @@ Resources:
 Outputs:
   DashboardURL:
     Description: Solution Dashboard URL
-    Value: !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${ParentStack}_${AWS::Region}'
+    Value: !If
+        - cNotGovCloudCondition
+        - !Sub 'https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${ParentStack}_${AWS::Region}'
+        - !Sub 'https://console.amazonaws-us-gov.com/cloudwatch/home?region=${AWS::Region}#dashboards:name=${ParentStack}_${AWS::Region}'

@@ -11,8 +11,9 @@ def is_route53_domain_exist(domain_name):
         response = r53.get_hosted_zone_count()
         if '0' != response['HostedZoneCount']:
             response = r53.list_hosted_zones_by_name(DNSName=domain_name)
-            if domain_name == response['HostedZones'][0]['Name']:
-                return True
+            if 0 != len(response['HostedZones']):
+                if domain_name == response['HostedZones'][0]['Name']:
+                    return True
         return False
     except Exception as e:
         print(str(e))

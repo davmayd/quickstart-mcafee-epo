@@ -133,11 +133,10 @@ Parameters:
     Description: What is the targeted deployment environment?
     Type: String
   SubDomainName:
-    AllowedPattern: ^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
     Description: >-
       The non-existant sub domain name to be used for managment solution. (e.g. manage.mcafee.com ). We recommend either to register AWS Route 53
       domain name so that public DNS records can be propagated automatically OR add the sub domain Name Server(NS) records into your main domain server.
-    MinLength: 1
+    Default: ''
     MaxLength: 256
     Type: String
   KeyPairName:
@@ -228,12 +227,12 @@ Parameters:
     MaxLength: 64
     Type: String
   EPOELBCertificateARN:
-    AllowedPattern: ^$|(arn:aws:)([a-z0-9/:-])*([a-z0-9])$
+    AllowedPattern: ^$|((arn:aws:)|(arn:aws-us-gov:))([a-z])([a-z0-9/:-])*([a-z0-9])$
     Default: ''
     Description: >-
       [ Optional ] ARN of the certificate stored in  Amazon Certifcate Manager(ACM) or imported in AWS IAM.
       Generally the certificate associated with the sub domain needs to be presented.
-      Certificate will be attached with ePO load balancer. e.g., arn:aws:*:us-west-1:*:certificate/*.
+      Certificate will be attached with ePO load balancer. e.g., arn:aws:*:us-west-1:*:certificate/* or arn:aws-us-gov:*:us-west-1:*:certificate/* .
     MaxLength: 256
     Type: String
   EPOAccessCIDR:
@@ -335,6 +334,10 @@ Conditions:
   cCreateELBCertificate: !Equals [ !Ref 'EPOELBCertificateARN', '' ]
   cUseELBCertificate: !Not [ !Equals [ !Ref 'EPOELBCertificateARN', '' ] ]
   cIsProduction: !Equals [ !Ref 'Environment', 'Production' ]
+  cGovCloudCondition: !Or
+    - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
+    - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
+  cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
 
 Rules:
   MatchPassword:
@@ -362,7 +365,8 @@ Resources:
       ServiceToken:
         Fn::ImportValue: !Sub ${BaseStack}-PreDeployLambda
       ParameterStoreIdentifier: !Sub /mcafee/${ParentStack}
-      Parameters: !Sub >
+      Parameters: !Sub
+      - |
         {
           "EPOAdminUserName": {"Type": "String","Value": "${EPOAdminUserName}","Description": "ePO admin user name."},
           "EPOAdminPassword": {"Type": "SecureString","Value": "${EPOAdminPassword}","Description": "ePO admin user password."},
@@ -371,7 +375,7 @@ Resources:
           "EPOPassphraseDR": {"Type": "SecureString","Value": "${EPOPassphraseDR}","Description": "ePO DR Passphrase."},
           "ConfirmEPOPassphraseDR": {"Type": "SecureString","Value": "${ConfirmEPOPassphraseDR}","Description": "ePO DR Passphrase."},
           "EPOConsolePort": {"Type": "String","Value": "${EPOConsolePort}","Description": "ePO console port."},
-          "EPOServerDNS": {"Type": "String","Value": "epo.${SubDomainName}","Description": "ePO server dns."},
+          "EPOServerDNS": {"Type": "String","Value": "${EPOServerDNSName}","Description": "ePO server dns."},
           "EPODatabaseName": {"Type": "String","Value": "${EPODatabaseName}","Description": "ePO database name."},
           "DBMasterUsername": {"Type": "String","Value": "${DBMasterUsername}","Description": "DB master user name."},
           "DBMasterUserPassword": {"Type": "SecureString","Value": "${DBMasterUserPassword}","Description": "DB master user Password."},
@@ -379,6 +383,10 @@ Resources:
           "OnPremiseDomainName": {"Type": "String","Value": "${OnPremiseDomainName}","Description": "On Premise domain name."},
           "OnPremiseServerDNS": {"Type": "String","Value": "${OnPremiseServerDNS}","Description": "On Premise DNS server IP."}
         }
+      - EPOServerDNSName: !If
+          - cNotGovCloudCondition
+          - !Sub epo.${SubDomainName}
+          - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
 
   # Sync ePO instance parameters lambda role
   SyncEPOInstanceParametersLambdaRole:
@@ -414,7 +422,10 @@ Resources:
                   - ssm:GetParameter
                   - ssm:DeleteParameter
                 Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+                  !Sub
+                  - arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
 
   # Sync ePO instance parameters lambda
   SyncEPOInstanceParametersLambda:
@@ -748,6 +759,12 @@ Resources:
                   triggers=post.update
                   path=Resources.epo.Metadata.AWS::CloudFormation::Init
                   action=cfn-init.exe -v -s ${AWS::StackName} -r EPOEC2Instance --region ${AWS::Region}
+            # No harm to add this entry in Non-Gov cloud env
+            C:\Windows\System32\drivers\etc\hosts:
+              content: !Join
+                - ' '
+                - - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
+                  - !GetAtt EPOLoadBalancer.DNSName
           services:
             windows:
               cfn-hup:
@@ -766,11 +783,15 @@ Resources:
               cwd: c:\provision\scripts\
               waitAfterCompletion: '0'
             1setup:
-              command: !Sub >
-                node provision.js --platform aws --component epo --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack} --db.username ${DBMasterUsername} --db.database ${EPODatabaseName}
-                --db.identifier ${DBInstanceIdentifier} --epo.serverdns epo.${SubDomainName} --epo.port 8080 --epo.secure_port ${EPOConsolePort}
-                --ah.serverdns ah.${SubDomainName} --ah.port ${AHPort} --threadsperchild 250
-
+              command: !Join
+                - ' '
+                - - !Sub node provision.js --platform aws --component epo --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack}
+                  - !Sub --db.username ${DBMasterUsername} --db.database ${EPODatabaseName} --db.identifier ${DBInstanceIdentifier} --epo.serverdns
+                  - !If
+                    - cNotGovCloudCondition
+                    - !Sub epo.${SubDomainName}
+                    - !GetAtt EPOLoadBalancer.DNSName
+                  - !Sub --epo.port 8080 --epo.secure_port ${EPOConsolePort} --ah.port ${AHPort} --threadsperchild 250
               cwd: c:\provision\
               waitAfterCompletion: '0'
     Properties:
@@ -1022,6 +1043,7 @@ Resources:
   # ePO Record Set
   EPOR53RecordSet:
     Type: AWS::Route53::RecordSet
+    Condition: cNotGovCloudCondition
     Properties:
       AliasTarget:
         DNSName: !GetAtt EPOLoadBalancer.DNSName
@@ -1035,10 +1057,11 @@ Resources:
   # ePO Record Set in private hosted zone
   EPOR53PrivateRecordSet:
     Type: AWS::Route53::RecordSet
+    Condition: cNotGovCloudCondition
     Properties:
       HostedZoneId:
         Fn::ImportValue: !Sub ${BaseStack}-R53PrivateHostedZone
-      Comment: Internal ePO RecordSet
+      Comment: 'Internal ePO RecordSet'
       Name:  !Sub epo.${SubDomainName}
       Type: A
       TTL: '600'
@@ -1048,10 +1071,11 @@ Resources:
   # Local AH Recored set in private hosted zone - it will be used by DXL brokers which are in VPC.
   LAHR53PrivateRecordSet:
     Type: AWS::Route53::RecordSet
+    Condition: cNotGovCloudCondition
     Properties:
       HostedZoneId:
         Fn::ImportValue: !Sub ${BaseStack}-R53PrivateHostedZone
-      Comment: Internal Local AH RecordSet
+      Comment: 'Internal Local AH RecordSet'
       Name:  !Sub ah.${SubDomainName}
       Type: A
       TTL: '600'
@@ -1082,7 +1106,10 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudWatchActionsEC2Access
+        - !Sub
+          - arn:${Partition}:iam::aws:policy/CloudWatchActionsEC2Access
+          - Partition:
+              !If [ cGovCloudCondition, aws-us-gov, aws ]
       Path: /actions/
 
   # ePO ec2 system status check and recover
@@ -1101,7 +1128,10 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: 0
       AlarmActions:
-        - !Sub 'arn:aws:automate:${AWS::Region}:ec2:recover'
+        - !Sub
+          - 'arn:${Partition}:automate:${AWS::Region}:ec2:recover'
+          - Partition:
+              !If [ cGovCloudCondition, aws-us-gov, aws ]
         - !Ref EPOEC2SnsTopic
       OKActions:
         - !Ref EPOEC2SnsTopic
@@ -1126,7 +1156,10 @@ Resources:
       ComparisonOperator: GreaterThanThreshold
       Threshold: '0'
       AlarmActions:
-        - !Sub 'arn:aws:swf:${AWS::Region}:${AWS::AccountId}:action/actions/AWS_EC2.InstanceId.Reboot/1.0'
+        - !Sub
+          - 'arn:${Partition}:swf:${AWS::Region}:${AWS::AccountId}:action/actions/AWS_EC2.InstanceId.Reboot/1.0'
+          - Partition:
+              !If [ cGovCloudCondition, aws-us-gov, aws ]
         - !Ref EPOEC2SnsTopic
       OKActions:
         - !Ref EPOEC2SnsTopic
@@ -1379,7 +1412,10 @@ Resources:
                   - iam:UploadServerCertificate
                   - iam:GetServerCertificate
                 Resource:
-                  - !Sub 'arn:aws:iam::${AWS::AccountId}:server-certificate/EPO_ELB_${ParentStack}'
+                  !Sub
+                  - 'arn:${Partition}:iam::${AWS::AccountId}:server-certificate/EPO_ELB_${ParentStack}'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
               - Effect: Allow
                 Action:
                   - elasticloadbalancing:ModifyListener
@@ -1396,7 +1432,10 @@ Resources:
                 Action:
                   - ssm:GetParameter
                 Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+                  !Sub
+                  - arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
 
   # ePO Post deploy lambda
   EPOPostDeployLambdaSecurityGroup:
@@ -1485,7 +1524,10 @@ Resources:
     Properties:
       ServiceToken: !GetAtt EPOPostDeployLambda.Arn
       ParentStack: !Sub ${ParentStack}
-      EPOConsoleURL: !Sub epo.${SubDomainName}
+      EPOConsoleURL: !If
+        - cNotGovCloudCondition
+        - !Sub epo.${SubDomainName}
+        - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
       EPOConsolePort: !Sub ${EPOConsolePort}
       EPOHTTPSListenerARN: !Ref EPOLoadBalancerListenerWithSelfSignedCert
       LAHHTTPSListenerARN: !Ref EPOLoadBalancerLocalAHListenerWithSelfSignedCert
@@ -1507,6 +1549,7 @@ Outputs:
     Description: ePO application server stack name
     Value: !Ref AWS::StackName
   ePOConsoleURL:
+    Condition: cNotGovCloudCondition
     Description: McAfee ePO console URL via sub domain name.
     Value: !Join
       - ''
@@ -1528,6 +1571,12 @@ Outputs:
   ePOLoadbalancerName:
     Description: EPO Amazon Elastic Load Balancer
     Value: !GetAtt EPOLoadBalancer.LoadBalancerName
+  EPOServerDNSName:
+    Description: ePO Server DNS Name
+    Value: !If
+        - cNotGovCloudCondition
+        - !Ref EPOR53RecordSet
+        - !GetAtt EPOLoadBalancer.DNSName
   EPOLoadBalancerURL:
     Description: EPO Load Balancer URL
     Value: !GetAtt EPOLoadBalancer.DNSName
