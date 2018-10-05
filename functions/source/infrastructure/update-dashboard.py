@@ -31,9 +31,11 @@ def render_dashboard_template(user_data):
     dashboard_body = re.sub('@public_hosted_zone_id@', user_data['HostedZoneID'], dashboard_body)
     dashboard_body = re.sub('@datastore_bucket_name@', user_data['DatastoreBucketName'], dashboard_body)
 
-
     # e.g https://us-west-2.console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks?filter=active&stackId=arn:aws:cloudformation:us-west-2:811797731536:stack%2Fpsdashboard%2F419bb9c0-442a-11e8-99ac-50a68a0e328e
-    stack_url = 'https://' + user_data['Region'] + '.console.aws.amazon.com/cloudformation/home?region=' + user_data['Region'] + '#/stacks?filter=active&stackId=' + user_data['ParentStackID']
+    if -1 != user_data['Region'].find("us-gov"):
+        stack_url = 'https://' + 'console.amazonaws-us-gov.com/cloudformation/home?region=' + user_data['Region'] + '#/stacks?filter=active&stackId=' + user_data['ParentStackID']
+    else:
+        stack_url = 'https://' + user_data['Region'] + '.console.aws.amazon.com/cloudformation/home?region=' + user_data['Region'] + '#/stacks?filter=active&stackId=' + user_data['ParentStackID']
     dashboard_body = re.sub('@stack_url@', stack_url, dashboard_body)
 
     dashboard_body = re.sub('@epo_system_check_alarm_arn@', user_data['EPOSystemCheckAlarmARN'], dashboard_body)

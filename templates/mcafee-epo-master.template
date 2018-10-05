@@ -143,10 +143,10 @@ Metadata:
         default: Updates for Stack Components
       AutoApproval:
         default: Application of Updates
-      AdminEmailAddress:
-        default: Operator Email
       ApproverEmailAddress:
         default: Approver Email
+      AdminEmailAddress:
+        default: Operator Email
       AutoCleanup:
         default: Auto Cleanup
       QSS3BucketName:
@@ -345,15 +345,14 @@ Parameters:
     MaxLength: 64
     Type: String
   EPOELBCertificateARN:
-    AllowedPattern: ^$|(arn:aws:)([a-z0-9/:-])*([a-z0-9])$
+    AllowedPattern: ^$|((arn:aws:)|(arn:aws-us-gov:))([a-z])([a-z0-9/:-])*([a-z0-9])$
     Default: ''
     Description: >-
-      [Optional] ARN of the certificate stored in  Amazon Certifcate Manager(ACM)
+      [ Optional ] ARN of the certificate stored in  Amazon Certifcate Manager(ACM)
       or imported in AWS IAM.
       Generally the certificate associated with the sub domain needs to be presented.
-      Certificate will be attached with ePO AWS elastic load balancer. e.g., arn:aws:*:us-west-1:*:certificate/*.
-      NOTE: Recommended to attach the certificate with ePO AWS elastic load balancer
-      for production servers.
+      Certificate will be attached with ePO load balancer. e.g., arn:aws:*:us-west-1:*:certificate/*
+      or arn:aws-us-gov:*:us-west-1:*:certificate/* .
     MaxLength: 256
     Type: String
   EPOAccessCIDR:
@@ -463,18 +462,18 @@ Parameters:
       can be sent for approval or user have to watch the pipeline periodically for
       approvals.
     Type: String
-  AdminEmailAddress:
-    AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)
-    ConstraintDescription: Must be a valid email address.
-    Description: Email address that notifications of any operations will be sent.
-      In addtion this will be used for tagging of ownership of resources.
-    Type: String
   ApproverEmailAddress:
     AllowedPattern: ^(?![\s\S])|(([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?))
     ConstraintDescription: Must be a valid email address.
     Default: ''
     Description: Approver Email address where approval will be sent in case of auto
       updates if AutoAproval is not selected.
+    Type: String
+  AdminEmailAddress:
+    AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)
+    ConstraintDescription: Must be a valid email address.
+    Description: Email address that notifications of any operations will be sent.
+      In addtion this will be used for tagging of ownership of resources.
     Type: String
   AutoCleanup:
     AllowedValues:
@@ -510,6 +509,7 @@ Parameters:
       can include numbers,
       lowercase letters, uppercase letters, hyphens, and forward slashes.'
     Type: String
+
 
 Rules:
   KeyPairsNotEmpty:
@@ -556,27 +556,29 @@ Mappings:
   AWSAMIRegionMap:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
+    us-gov-west-1:
+      MFEBASTIONHVM: ami-8924bce8
     us-west-2:
-      MFEBASTIONHVM: ami-038c6c9eef821f8c1
+      MFEBASTIONHVM: ami-0785d7211ccd584d5
 
     ap-northeast-1:
-      MFEBASTIONHVM: ami-0117997cd59222a5f
-    eu-west-2:
-      MFEBASTIONHVM: ami-08788aaad719b0c4c
+      MFEBASTIONHVM: ami-088da287b2d3c2b1f
     us-west-1:
-      MFEBASTIONHVM: ami-05b1d0cfcfbf5be36
+      MFEBASTIONHVM: ami-04f54faaaa12e93e9
     ca-central-1:
-      MFEBASTIONHVM: ami-0f4b891b0a76a8ac3
-    eu-central-1:
-      MFEBASTIONHVM: ami-07960c8e8662e413c
+      MFEBASTIONHVM: ami-08733aae53f8a7528
+    eu-west-2:
+      MFEBASTIONHVM: ami-0e6dfa2fce256e9d7
     us-east-1:
-      MFEBASTIONHVM: ami-08a48d376b39af2be
-    ap-southeast-1:
-      MFEBASTIONHVM: ami-0e2a42b200397972a
-    ap-southeast-2:
-      MFEBASTIONHVM: ami-043641459d76e806a
+      MFEBASTIONHVM: ami-0aa61884051677e26
     us-east-2:
-      MFEBASTIONHVM: ami-0e5cd3d8fb2f323a1
+      MFEBASTIONHVM: ami-03f1b141cd6e85f72
+    ap-southeast-1:
+      MFEBASTIONHVM: ami-04f17581f42ab3e20
+    eu-central-1:
+      MFEBASTIONHVM: ami-02fa75a5b9a154d77
+    ap-southeast-2:
+      MFEBASTIONHVM: ami-05b4453782446c386
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
@@ -684,8 +686,8 @@ Resources:
         ClientAccessCIDR: !Ref ClientAccessCIDR
         EnableAutoUpdate: !Ref EnableAutoUpdate
         AutoApproval: !Ref AutoApproval
-        AdminEmailAddress: !Ref AdminEmailAddress
         ApproverEmailAddress: !Ref ApproverEmailAddress
+        AdminEmailAddress: !Ref AdminEmailAddress
         AutoCleanup: !Ref AutoCleanup
         QSS3BucketName: !Ref QSS3BucketName
         QSS3KeyPrefix: !Ref QSS3KeyPrefix

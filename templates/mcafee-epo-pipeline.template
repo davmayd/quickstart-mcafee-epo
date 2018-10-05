@@ -151,6 +151,10 @@ Parameters:
 
 Conditions:
   cNoAutoApproval: !Equals [ !Ref AutoApproval, 'Update after Approval' ]
+  cGovCloudCondition: !Or
+    - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
+    - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
+
 
 Resources:
 
@@ -204,7 +208,10 @@ Resources:
                   - ssm:PutParameter
                   - ssm:GetParameter
                 Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+                  !Sub
+                  - arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
               - Effect: Allow
                 Action:
                   - s3:GetBucketLocation
@@ -215,11 +222,17 @@ Resources:
                 Resource:
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref QSS3BucketName
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref QSS3BucketName
                       - '/*'
               - Effect: Allow
@@ -232,11 +245,17 @@ Resources:
                 Resource:
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref RegionQSS3BucketName
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref RegionQSS3BucketName
                       - '/*'
 
@@ -296,7 +315,7 @@ Resources:
   PipelineSNSTopic:
     Type: AWS::SNS::Topic
     Properties:
-      DisplayName: McAfee Pipeline Notification
+      DisplayName: 'McAfee Pipeline Notification'
       TopicName: !Sub ${ParentStack}-Notification
       Subscription:
         - Endpoint: !Ref AdminEmailAddress
@@ -324,7 +343,7 @@ Resources:
     Type: AWS::SNS::Topic
     Condition: cNoAutoApproval
     Properties:
-      DisplayName: McAfee Pipeline Approval Notification
+      DisplayName: 'McAfee Pipeline Approval Notification'
       TopicName: !Sub ${ParentStack}-Approver-Notification
       Subscription:
         - Endpoint: !Ref ApproverEmailAddress
@@ -467,7 +486,10 @@ Resources:
             Action:
               - sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - !Sub
+          - arn:${Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+          - Partition:
+              !If [ cGovCloudCondition, aws-us-gov, aws ]
       Path: /
       Policies:
         - PolicyName: PipelineLambdaRolePolicy
@@ -478,7 +500,10 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub  arn:aws:s3:::${RegionQSS3BucketName}/*
+                  !Sub
+                  - arn:${Partition}:s3:::${RegionQSS3BucketName}/*
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
               - Effect: Allow
                 Action:
                   - s3:PutObject
@@ -488,11 +513,17 @@ Resources:
                 Resource:
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref PipelineArtifactStore
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref PipelineArtifactStore
                       - '/*'
               - Effect: Allow
@@ -533,7 +564,10 @@ Resources:
                   - ssm:PutParameter
                   - ssm:GetParametersByPath
                 Resource:
-                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+                  !Sub
+                  - 'arn:${Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
 
 
   # Setup Artifacts Lambda
@@ -660,11 +694,17 @@ Resources:
                 Resource:
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref PipelineArtifactStore
                   - !Join
                     - ''
-                    - - 'arn:aws:s3:::'
+                    - - !Sub
+                        - 'arn:${Partition}:s3:::'
+                        - Partition:
+                            !If [ cGovCloudCondition, aws-us-gov, aws ]
                       - !Ref PipelineArtifactStore
                       - '/*'
               # needs access to source templates  needs access to objects that are used in source actions
@@ -674,8 +714,14 @@ Resources:
                   - s3:GetObject
                   - s3:GetObjectVersion
                 Resource:
-                  - !Sub 'arn:aws:s3:::${RegionQSS3BucketName}'
-                  - !Sub 'arn:aws:s3:::${RegionQSS3BucketName}/*'
+                  - !Sub
+                    - 'arn:${Partition}:s3:::${RegionQSS3BucketName}'
+                    - Partition:
+                        !If [ cGovCloudCondition, aws-us-gov, aws ]
+                  - !Sub
+                    - 'arn:${Partition}:s3:::${RegionQSS3BucketName}/*'
+                    - Partition:
+                        !If [ cGovCloudCondition, aws-us-gov, aws ]
               # For Approval actions
               - Effect: Allow
                 Action:
@@ -700,7 +746,10 @@ Resources:
                   - cloudformation:ExecuteChangeSet
                   - cloudformation:DeleteChangeSet
                 Resource:
-                  - !Sub 'arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ParentStack}*'
+                  !Sub
+                  - 'arn:${Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${ParentStack}*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
               # Pass IAM role to cloudformation role
               - Effect: Allow
                 Action:

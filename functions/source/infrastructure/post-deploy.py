@@ -21,8 +21,6 @@ def validate_email_params(user_data, email_data):
         raise Exception('UserData JSON must include the StackURL')
     if 'EPOConsoleURL' not in user_data:
         raise Exception('UserData JSON must include the EPOConsoleURL')
-    if 'PipeLineURL' not in user_data:
-        raise Exception('UserData JSON must include the PipeLineURL')
     if 'DashboardURL' not in user_data:
         raise Exception('UserData JSON must include the DashboardURL')
     if 'SenderEmailAddress' not in email_data:
@@ -66,8 +64,7 @@ def download_message(user_data, email_data):
     print(components)
     print(user_data['EPOConsoleURL'])
     print(user_data['DashboardURL'])
-    if '' != user_data['PipeLineURL']:
-        print(user_data['PipeLineURL'])
+
     return message
 
 def delete_parameter(name):
@@ -195,12 +192,12 @@ def remote_command_handler(user_data, request_type):
         if request_type == 'Create':
             group_name = 'vgroup_' + cmd_data['ParentStackName']
             assignment_name = 'vassign_' + cmd_data['ParentStackName']
-            epo_dns_name = cmd_data['EPOURL']
-            ah_url = cmd_data['AHURL']
-            ah_elb_url = cmd_data['AHURL']
+            epo_dns_name = user_data['EPOServerDNSName']
+            ah_url = user_data['AHServerDNSName']
+            ah_elb_url = user_data['AHServerDNSName']
             dxl_elb_url = user_data['DXLELBURL']
             dxl_port = cmd_data['DXLPort']
-            if '' == cmd_data['DomainName']:
+            if 'DomainName' not in cmd_data or '' == cmd_data['DomainName']:
                 epo_dns_name = user_data['EPOELBURL']
                 ah_elb_url = user_data['AHELBURL']
 
@@ -210,7 +207,7 @@ def remote_command_handler(user_data, request_type):
             response = ssm.get_parameter(Name=parameter_store_identifier+'/EPOAdminPassword', WithDecryption=True)
             epo_password = response['Parameter']['Value']
 
-            epo_hostname = cmd_data['EPOURL']
+            epo_hostname = user_data['EPOServerDNSName']
             epo_port = cmd_data['EPOConsolePort']
 
             auth_string = epo_username + ':' + epo_password

@@ -9,7 +9,6 @@ Metadata:
           default: McAfee ePolicy Orchestrator Platform Configuration
         Parameters:
           - Environment
-          - SubDomainName
           - Availability
           - KeyPairName
       - Label:
@@ -23,6 +22,7 @@ Metadata:
           - EPOAdminUserName
           - EPOAdminPassword
           - ConfirmEPOAdminPassword
+          - EPOServerDNSName
           - EPOConsolePort
       - Label:
           default: DXL Stack Configuration
@@ -45,8 +45,6 @@ Metadata:
     ParameterLabels:
       Environment:
         default: Deployment Environment
-      SubDomainName:
-        default: Sub Domain Name
       Availability:
         default: High Availability
       KeyPairName:
@@ -61,6 +59,8 @@ Metadata:
         default: Admin Password
       ConfirmEPOAdminPassword:
         default: Confirm Admin Password
+      EPOServerDNSName:
+        default: EPO Server DNS Name
       EPOConsolePort:
         default: Console Port
       DXLImageId:
@@ -88,14 +88,6 @@ Parameters:
       - 'Development'
     Default: 'Production'
     Description: What is the targeted deployment environment?
-    Type: String
-  SubDomainName:
-    AllowedPattern: ^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
-    Description: >-
-      The non-existant sub domain name to be used for managment solution. (e.g. manage.mcafee.com ). We recommend either to register AWS Route 53
-      domain name so that public DNS records can be propagated automatically OR add the sub domain Name Server(NS) records into your main domain server.
-    MinLength: 1
-    MaxLength: 256
     Type: String
   Availability:
     AllowedValues:
@@ -137,6 +129,11 @@ Parameters:
     MaxLength: 256
     MinLength: 8
     NoEcho: true
+    Type: String
+  EPOServerDNSName:
+    Description: EPO Server DNS Name
+    MinLength: 1
+    MaxLength: 256
     Type: String
   EPOConsolePort:
     Default: '8443'
@@ -202,6 +199,9 @@ Parameters:
 
 Conditions:
   cHARequired: !Equals [ !Ref Availability, 'Yes']
+  cGovCloudCondition: !Or
+    - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
+    - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
 
 Rules:
   MatchPassword:
@@ -226,7 +226,7 @@ Resources:
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: !Ref DXLPort
-          ToPort: 8883
+          ToPort: !Ref DXLPort
           CidrIp: !Ref ClientAccessCIDR
         - IpProtocol: tcp
           FromPort: 8081
@@ -516,7 +516,7 @@ Resources:
               command: !Sub |
                 #!/bin/bash -x
                 exec > /tmp/dxl-provision1.log 2>&1
-                EPO_SERVER=epo.${SubDomainName}
+                EPO_SERVER=${EPOServerDNSName}
                 EPO_PORT=8080
                 EPO_SECURE_PORT=${EPOConsolePort}
                 EPO_WAKEUP_PORT=8081
@@ -626,7 +626,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - autoscaling:UpdateAutoScalingGroup
-                Resource: !Sub 'arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                Resource:
+                  !Sub
+                  - 'arn:${Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
 
   # Update ASG metrics lambda
   DXLUpdateASGMetricsLambda:
@@ -766,7 +770,10 @@ Resources:
                   - sns:Publish
                 Resource: !Join
                   - ''
-                  - - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:'
+                  - - !Sub
+                      - 'arn:${Partition}:sns:${AWS::Region}:${AWS::AccountId}:'
+                      - Partition:
+                          !If [ cGovCloudCondition, aws-us-gov, aws ]
                     - !GetAtt DXLLifecycleHookTopic.TopicName
               - Effect: Allow
                 Action:
@@ -843,7 +850,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - autoscaling:CompleteLifecycleAction
-                Resource: !Sub 'arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                Resource:
+                  !Sub
+                  - 'arn:${Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
 
   # DXL autoscaling life cycle hook lambda for instance termination
   DXLLifecycleHookLamda:
@@ -914,7 +925,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - autoscaling:UpdateAutoScalingGroup
-                Resource: !Sub 'arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                Resource:
+                  !Sub
+                  - 'arn:${Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
               - Effect: Allow
                 Action:
                   - logs:CreateLogStream

@@ -24,6 +24,7 @@ Metadata:
           - EPOAdminUserName
           - EPOAdminPassword
           - ConfirmEPOAdminPassword
+          - EPOServerDNSName
           - EPOConsolePort
           - EPODatabaseName
       - Label:
@@ -68,6 +69,8 @@ Metadata:
         default: Admin Password
       ConfirmEPOAdminPassword:
         default: Confirm Admin Password
+      EPOServerDNSName:
+        default: EPO Server DNS Name
       EPOConsolePort:
         default: Console Port
       EPODatabaseName:
@@ -103,11 +106,10 @@ Parameters:
     Description: What is the targeted deployment environment?
     Type: String
   SubDomainName:
-    AllowedPattern: ^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
     Description: >-
       The non-existant sub domain name to be used for managment solution. (e.g. manage.mcafee.com ). We recommend either to register AWS Route 53
       domain name so that public DNS records can be propagated automatically OR add the sub domain Name Server(NS) records into your main domain server.
-    MinLength: 1
+    Default: ''
     MaxLength: 256
     Type: String
   Availability:
@@ -150,6 +152,11 @@ Parameters:
     MaxLength: 256
     MinLength: 8
     NoEcho: true
+    Type: String
+  EPOServerDNSName:
+    Description: EPO Server DNS Name
+    MinLength: 1
+    MaxLength: 256
     Type: String
   EPOConsolePort:
     Default: '8443'
@@ -230,6 +237,10 @@ Parameters:
 
 Conditions:
   cHARequired: !Equals [ !Ref Availability, 'Yes']
+  cGovCloudCondition: !Or
+    - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
+    - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
+  cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
 
 Rules:
   MatchPassword:
@@ -417,7 +428,10 @@ Resources:
               - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
             Resource: !Join
                 - ''
-                - - !Sub 'arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/'
+                - - !Sub
+                    - 'arn:${Partition}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/'
+                    - Partition:
+                        !If [ cGovCloudCondition, aws-us-gov, aws ]
                   - !Ref AHLoadBalancer
       Roles:
         - Fn::ImportValue: !Sub ${BaseStack}-PostDeployLambdaRole
@@ -425,6 +439,7 @@ Resources:
   # AH AWS Route53 Record Set
   AHR53RecordSet:
     Type: AWS::Route53::RecordSet
+    Condition: cNotGovCloudCondition
     Properties:
       AliasTarget:
         DNSName: !GetAtt AHLoadBalancer.CanonicalHostedZoneName
@@ -567,8 +582,8 @@ Resources:
               command: !Sub >
                 node provision.js --platform aws --component ah --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack}
                 --threadsperchild 250 --db.username ${DBMasterUsername} --db.identifier ${DBInstanceIdentifier}  --db.database ${EPODatabaseName}
-                --epo.serverdns epo.${SubDomainName} --epo.port 8080 --epo.secure_port ${EPOConsolePort}
-                --ah.serverdns ah.${SubDomainName} --ah.port ${AHPort}
+                --epo.serverdns ${EPOServerDNSName} --epo.port 8080 --epo.secure_port ${EPOConsolePort}
+                --ah.port ${AHPort}
               cwd: c:\provision\
               waitAfterCompletion: '0'
 
@@ -668,7 +683,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - autoscaling:UpdateAutoScalingGroup
-                Resource: !Sub 'arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                Resource:
+                  !Sub
+                  - 'arn:${Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
 
   # Update ASG metrics lambda
   AHUpdateASGMetricsLambda:
@@ -954,7 +973,10 @@ Resources:
                   - sns:Publish
                 Resource: !Join
                   - ''
-                  - - !Sub 'arn:aws:sns:${AWS::Region}:${AWS::AccountId}:'
+                  - - !Sub
+                      - 'arn:${Partition}:sns:${AWS::Region}:${AWS::AccountId}:'
+                      - Partition:
+                          !If [ cGovCloudCondition, aws-us-gov, aws ]
                     - !GetAtt AHLifecycleHookTopic.TopicName
               - Effect: Allow
                 Action:
@@ -1030,7 +1052,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - autoscaling:CompleteLifecycleAction
-                Resource: !Sub 'arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                Resource:
+                  !Sub
+                  - 'arn:${Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
 
   # AH ASG autoscaling life cycle hook lambda
   AHASGLifecycleHookLamda:
@@ -1100,7 +1126,11 @@ Resources:
               - Effect: Allow
                 Action:
                   - autoscaling:UpdateAutoScalingGroup
-                Resource: !Sub 'arn:aws:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                Resource:
+                  !Sub
+                  - 'arn:${Partition}:autoscaling:${AWS::Region}:${AWS::AccountId}:autoScalingGroup:*:autoScalingGroupName/*'
+                  - Partition:
+                      !If [ cGovCloudCondition, aws-us-gov, aws ]
               - Effect: Allow
                 Action:
                   - logs:CreateLogStream
@@ -1161,9 +1191,12 @@ Resources:
 
 
 Outputs:
-  AHUrl:
-    Description: AH AWS Route53 recordset
-    Value: !Ref AHR53RecordSet
+  AHServerDNSName:
+    Description: AH Server DNS Name
+    Value: !If
+      - cNotGovCloudCondition
+      - !Ref AHR53RecordSet
+      - !GetAtt [ AHLoadBalancer, CanonicalHostedZoneName ]
   AHCommunicationPort:
     Description: AH Communication Port
     Value: !Ref AHPort

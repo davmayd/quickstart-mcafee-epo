@@ -27,6 +27,7 @@ def handler(event, context):
         except Exception as e:
             # use the exception message to get the account ID the function executes under
             account_ids.append(re.search(r'(arn:aws:sts::)([0-9]+)', str(e)).groups()[1])
+            account_ids.append(re.search(r'(arn:aws-us-gov:sts::)([0-9]+)', str(e)).groups()[1])
 
         print(account_ids)
         delete_on = datetime.date.today().strftime('%Y-%m-%d')
