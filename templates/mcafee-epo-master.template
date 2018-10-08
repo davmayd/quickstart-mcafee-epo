@@ -6,15 +6,6 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
     - Label:
-        default: McAfee ePolicy Orchestrator Platform Configuration
-      Parameters:
-      - ProtectedInstances
-      - Environment
-      - DomainName
-      - SubDomainName
-      - Availability
-      - KeyPairName
-    - Label:
         default: Network Configuration
       Parameters:
       - AvailabilityZones
@@ -24,6 +15,15 @@ Metadata:
       - PublicSubnet1CIDR
       - PublicSubnet2CIDR
       - RemoteAccessCIDR
+    - Label:
+        default: McAfee ePolicy Orchestrator Platform Configuration
+      Parameters:
+      - ProtectedInstances
+      - Environment
+      - DomainName
+      - SubDomainName
+      - Availability
+      - KeyPairName
     - Label:
         default: On-Premise Domain Configuration
       Parameters:
@@ -176,8 +176,8 @@ Parameters:
   DomainName:
     AllowedPattern: ^$|^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
     Description: >-
-      [Optional] AWS Route 53 registered domain name (e.g. mcafee.com).
-      We recommend either to register AWS Route 53 domain name so that public DNS
+      [Optional] Amazon Route 53 registered domain name (e.g. mcafee.com).
+      We recommend either to register Amazon Route 53 domain name so that public DNS
       records can be propagated automatically
       OR add the sub domain Name Server(NS) records into your main domain server.
     Default: ''
@@ -185,8 +185,8 @@ Parameters:
   SubDomainName:
     AllowedPattern: ^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
     Description: >-
-      The non-existant sub domain name to be used for managment solution. (e.g. manage.mcafee.com
-      ). We recommend either to register AWS Route 53
+      The non-existent sub domain name to be used for managment solution. (e.g. manage.mcafee.com
+      ). We recommend either to register Amazon Route 53
       domain name so that public DNS records can be propagated automatically OR add
       the sub domain Name Server(NS) records into your main domain server.
     MinLength: 1
@@ -297,7 +297,7 @@ Parameters:
     ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric,
       and a special character but it must not contain backslashes (\) or spaces or
       any double quotes (")'.
-    Description: 'Create a global administrator password for McAfee ePO console login.
+    Description: 'Your global administrator password for McAfee ePO console login.
       Must be a minimum of 8 characters and contain alpha, numeric, and a special
       character.'
     MaxLength: 256
@@ -309,7 +309,7 @@ Parameters:
     ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric,
       and a special character but it must not contain backslashes (\) or spaces or
       any double quotes (")'.
-    Description: 'Create a global administrator password for McAfee ePO console login.
+    Description: 'Confirm your global administrator password for McAfee ePO console login.
       Must be a minimum of 8 characters and contain alpha, numeric, and a special
       character.'
     MaxLength: 256
@@ -331,7 +331,7 @@ Parameters:
     AllowedPattern: '^[^\"\\\s]*$'
     ConstraintDescription: 'It must be 14 to 200 characters in length. It must not
       contain backslashes (\) or spaces or any double quotes (")'
-    Description: 'Create a keystore encryption passphrase. This is required for disaster
+    Description: 'Confirm the keystore encryption passphrase. This is required for disaster
       recovery. Server recovery passphrase must be 14 to 200 characters in length.
       It must not contain backslashes (\) or spaces or any double quotes (")'
     MaxLength: 200
@@ -387,7 +387,7 @@ Parameters:
     ConstraintDescription: It can contain any printable ASCII character except "/",
       """, or "@". Must contain from 8 to 255 characters
     Description: >-
-      Create a password for the master user for the database. This password can contain
+      Confirm the password for the master user for the database. This password can contain
       any printable ASCII character except "/", """, or "@".
       Must contain from 8 to 255 characters
     MaxLength: 255
@@ -457,17 +457,14 @@ Parameters:
     Default: 'Automatic'
     Description: >-
       Auto or Manual approval to review the change sets on auto updates of stack components.
-      Note: For no auto approval cases(Selected Update After Approval), make sure
-      to provide approver email address so that notifications
-      can be sent for approval or user have to watch the pipeline periodically for
-      approvals.
+      Note: If you don’t want auto approval (i.e. with Update after Approval selected), provide the email address of the approver. This enables notifications to be sent for approval. Otherwise, the approver will have to watch the pipeline periodically for approvals.
     Type: String
   ApproverEmailAddress:
     AllowedPattern: ^(?![\s\S])|(([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?))
     ConstraintDescription: Must be a valid email address.
     Default: ''
     Description: Approver Email address where approval will be sent in case of auto
-      updates if AutoAproval is not selected.
+      updates if AutoApproval is not selected.
     Type: String
   AdminEmailAddress:
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)
@@ -480,7 +477,7 @@ Parameters:
     - Enable
     - Disable
     Default: Enable
-    Description: Auto cleanup of backup logs and data in S3.
+    Description: Auto cleanup of backup logs and data in Amazon S3.
     Type: String
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$

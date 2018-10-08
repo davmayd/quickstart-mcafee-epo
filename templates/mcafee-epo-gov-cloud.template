@@ -4,13 +4,6 @@ Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: McAfee ePolicy Orchestrator Platform Configuration
-        Parameters:
-          - ProtectedInstances
-          - Environment
-          - Availability
-          - KeyPairName
-      - Label:
           default: Network Configuration
         Parameters:
           - AvailabilityZones
@@ -20,6 +13,13 @@ Metadata:
           - PublicSubnet1ID
           - PublicSubnet2ID
           - BastionSecurityGroupID
+      - Label:
+          default: McAfee ePolicy Orchestrator Platform Configuration
+        Parameters:
+          - ProtectedInstances
+          - Environment
+          - Availability
+          - KeyPairName
       - Label:
           default: On-Premise Domain Configuration
         Parameters:
@@ -126,6 +126,8 @@ Metadata:
         default: Agent Handler Port
       DXLPort:
         default: DXL Port
+      AdminEmailAddress:
+        default: Operator Email
       ClientAccessCIDR:
         default: External Access CIDR
       AutoCleanup:
@@ -217,7 +219,7 @@ Parameters:
   EPOAdminPassword:
     AllowedPattern: '((?=.*\d)(?=.*\W)(?!.*\")(?!.*\\)(?!.*\s).{8,256})'
     ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric, and a special character but it must not contain backslashes (\) or spaces or any double quotes (")'.
-    Description: 'The administrator password for ePO Console Access.  Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
+    Description: 'Your global administrator password for ePO Console Access.  Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
     MaxLength: 256
     MinLength: 8
     NoEcho: true
@@ -225,7 +227,7 @@ Parameters:
   ConfirmEPOAdminPassword:
     AllowedPattern: '((?=.*\d)(?=.*\W)(?!.*\")(?!.*\\)(?!.*\s).{8,256})'
     ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric, and a special character but it must not contain backslashes (\) or spaces or any double quotes (")'.
-    Description: 'Create a global administrator password for McAfee ePO console login. Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
+    Description: 'Confirm your global administrator password for McAfee ePO console login. Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
     MaxLength: 256
     MinLength: 8
     NoEcho: true
@@ -241,7 +243,7 @@ Parameters:
   ConfirmEPOPassphraseDR:
     AllowedPattern: '^[^\"\\\s]*$'
     ConstraintDescription: 'It must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
-    Description: 'Create a keystore encryption passphrase. This is required for disaster recovery. Server recovery passphrase must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
+    Description: 'Confirm the keystore encryption passphrase. This is required for disaster recovery. Server recovery passphrase must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
     MaxLength: 200
     MinLength: 14
     NoEcho: true
@@ -289,7 +291,7 @@ Parameters:
     AllowedPattern: '[^@\/\"]+'
     ConstraintDescription: It can contain any printable ASCII character except "/", """, or "@". Must contain from 8 to 255 characters
     Description: >-
-      Create a password for the master user for the database. This password can contain any printable ASCII character except "/", """, or "@".
+      Confirm the password for the master user for the database. This password can contain any printable ASCII character except "/", """, or "@".
       Must contain from 8 to 255 characters
     MaxLength: 255
     MinLength: 8
@@ -346,7 +348,7 @@ Parameters:
       - Enable
       - Disable
     Default: Enable
-    Description: Auto cleanup of backup logs and data in S3.
+    Description: Auto cleanup of backup logs and data in Amazon S3.
     Type: String
   QSS3BucketName:
     AllowedPattern: ^[0-9a-zA-Z]+([0-9a-zA-Z-]*[0-9a-zA-Z])*$
