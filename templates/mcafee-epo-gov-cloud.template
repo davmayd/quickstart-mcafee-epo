@@ -419,9 +419,9 @@ Mappings:
       MFEEPOAGENTHANDLERHVM: McAfee ePO Agent Handler Image
       MFEDXLBROKERHVM: McAfee Data Exchange Layer Image
     us-gov-west-1:
-      MFEDXLBROKERHVM: ami-f620b897
-      MFEEPOAGENTHANDLERHVM: ami-fc25bd9d
-      MFEEPOSERVERHVM: ami-4824bc29
+      MFEDXLBROKERHVM: ami-def66dbf
+      MFEEPOAGENTHANDLERHVM: ami-96fe65f7
+      MFEEPOSERVERHVM: ami-5cfe653d
   NodeTierMap:
     '1-10K': {  'Tier': '1' }
     '10K-25K': {  'Tier': '2' }
