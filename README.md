@@ -16,6 +16,8 @@ The AWS CloudFormation templates included with the Quick Start automate the foll
 
 You can also use the AWS CloudFormation templates as a starting point for your own implementation.
 
+If you have an AWS GovCloud (US) account, you can launch this Quick Start in the AWS GovCloud (US) region. 
+
 ![Quick Start architecture for McAfee ePO on AWS Cloud](https://d1.awsstatic.com/partner-network/QuickStart/datasheets/mcafee-epo-on-aws-architecture.2b0fcd639d86cdd302f7e96039f8b141630dc22f.png)
 
 For architectural details, best practices, step-by-step instructions, and customization options, see the [deployment guide](https://fwd.aws/Jq6dV).
