@@ -235,6 +235,47 @@ Parameters:
       lowercase letters, uppercase letters, hyphens, and forward slashes.'
     Type: String
 
+Mappings:
+  InstanceTypes:
+    us-east-1:
+      InstanceType: 'c4.large'
+    us-east-2:
+      InstanceType: 'c4.large'
+    us-west-1:
+      InstanceType: 'c4.large'
+    us-west-2:
+      InstanceType: 'c4.large'
+    ca-central-1:
+      InstanceType: 'c4.large'
+    eu-central-1:
+      InstanceType: 'c4.large'
+    eu-west-1:
+      InstanceType: 'c4.large'
+    eu-west-2:
+      InstanceType: 'c4.large'
+    eu-west-3:
+      InstanceType: 'c5.large'
+    ap-northeast-1:
+      InstanceType: 'c4.large'
+    ap-northeast-2:
+      InstanceType: 'c4.large'
+    ap-northeast-3:
+      InstanceType: 'c4.large'
+    ap-southeast-1:
+      InstanceType: 'c4.large'
+    ap-southeast-2:
+      InstanceType: 'c4.large'
+    ap-south-1:
+      InstanceType: 'c4.large'
+    sa-east-1:
+      InstanceType: 'c4.large'
+    us-gov-west-1:
+      InstanceType: 'c4.large'
+    cn-north-1:
+      InstanceType: 'c4.large'
+    cn-northwest-1:
+      InstanceType: 'c4.large'
+
 Conditions:
   cHARequired: !Equals [ !Ref Availability, 'Yes']
   cGovCloudCondition: !Or
@@ -594,7 +635,7 @@ Resources:
             VolumeSize: !Ref AHInstanceSize
       IamInstanceProfile: !Ref AHEC2InstanceProfile
       ImageId: !Ref AHImageId
-      InstanceType: !Ref AHInstanceType
+      InstanceType: !FindInMap [InstanceTypes, !Ref 'AWS::Region', InstanceType]
       KeyName: !Ref KeyPairName
       SecurityGroups:
         - !Ref AHELBSecurityGroup

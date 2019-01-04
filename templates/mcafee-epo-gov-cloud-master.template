@@ -1,69 +1,75 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: McAfee-ePO Deploys McAfee Enterprise Security Management Platform on AWS (New VPC)
+Description: McAfee-ePO Deploys McAfee Enterprise Security Management Platform on
+  AWS (New VPC) (qs-1oknn9kad)
 Metadata:
   LICENSE: Apache License Version 2.0
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      - Label:
-          default: Network Configuration
-        Parameters:
-          - AvailabilityZones
-          - VPCCIDR
-          - PrivateSubnet1CIDR
-          - PrivateSubnet2CIDR
-          - PublicSubnet1CIDR
-          - PublicSubnet2CIDR
-          - RemoteAccessCIDR
-      - Label:
-          default: McAfee ePolicy Orchestrator Platform Configuration
-        Parameters:
-          - ProtectedInstances
-          - Environment
-          - Availability
-          - KeyPairName
-      - Label:
-          default: On-Premise Domain Configuration
-        Parameters:
-          - OnPremiseDomainName
-          - OnPremiseServerDNS
-      - Label:
-          default: ePO Application Server Configuration
-        Parameters:
-          - EPOLicenseKey
-          - EPOAdminUserName
-          - EPOAdminPassword
-          - ConfirmEPOAdminPassword
-          - EPOPassphraseDR
-          - ConfirmEPOPassphraseDR
-          - EPOConsolePort
-          - EPOELBCertificateARN
-          - EPOAccessCIDR
-      - Label:
-          default: ePO Database - Amazon RDS (SQL Server) Configuration
-        Parameters:
-          - DBMasterUsername
-          - DBMasterUserPassword
-          - ConfirmDBMasterUserPassword
-          - DBPort
-          - DBAllocatedStorage
-          - DBBackupRetentionPeriod
-          - DBInstanceIdentifier
-      - Label:
-          default: Client Communication Configuration
-        Parameters:
-          - AHPort
-          - DXLPort
-          - ClientAccessCIDR
-      - Label:
-          default: Administration Configuration
-        Parameters:
-          - AdminEmailAddress
-          - AutoCleanup
-      - Label:
-          default: AWS Quick Start Configuration
-        Parameters:
-        - QSS3BucketName
-        - QSS3KeyPrefix
+    - Label:
+        default: Network Configuration
+      Parameters:
+      - AvailabilityZones
+      - VPCCIDR
+      - PrivateSubnet1CIDR
+      - PrivateSubnet2CIDR
+      - PublicSubnet1CIDR
+      - PublicSubnet2CIDR
+      - RemoteAccessCIDR
+    - Label:
+        default: McAfee ePolicy Orchestrator Platform Configuration
+      Parameters:
+      - ProtectedInstances
+      - Environment
+      - DomainName
+      - SubDomainName
+      - Availability
+      - KeyPairName
+    - Label:
+        default: On-Premise Domain Configuration
+      Parameters:
+      - OnPremiseDomainName
+      - OnPremiseServerDNS
+    - Label:
+        default: ePO Application Server Configuration
+      Parameters:
+      - EPOLicenseKey
+      - EPOAdminUserName
+      - EPOAdminPassword
+      - ConfirmEPOAdminPassword
+      - EPOPassphraseDR
+      - ConfirmEPOPassphraseDR
+      - EPOConsolePort
+      - EPOELBCertificateARN
+      - EPOAccessCIDR
+    - Label:
+        default: ePO Database - Amazon RDS (SQL Server) Configuration
+      Parameters:
+      - DBMasterUsername
+      - DBMasterUserPassword
+      - ConfirmDBMasterUserPassword
+      - DBPort
+      - DBAllocatedStorage
+      - DBBackupRetentionPeriod
+      - DBInstanceIdentifier
+    - Label:
+        default: Client Communication Configuration
+      Parameters:
+      - AHPort
+      - DXLPort
+      - ClientAccessCIDR
+    - Label:
+        default: Administration Configuration
+      Parameters:
+      - EnableAutoUpdate
+      - AutoApproval
+      - ApproverEmailAddress
+      - AdminEmailAddress
+      - AutoCleanup
+    - Label:
+        default: AWS Quick Start Configuration
+      Parameters:
+      - QSS3BucketName
+      - QSS3KeyPrefix
     ParameterLabels:
       ProtectedInstances:
         default: Number of Endpoints
@@ -239,16 +245,24 @@ Parameters:
     Type: String
   EPOAdminPassword:
     AllowedPattern: '((?=.*\d)(?=.*\W)(?!.*\")(?!.*\\)(?!.*\s).{8,256})'
-    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric, and a special character but it must not contain backslashes (\) or spaces or any double quotes (")'.
-    Description: 'Your global administrator password for McAfee ePO console login. Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
+    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric,
+      and a special character but it must not contain backslashes (\) or spaces or
+      any double quotes (")'.
+    Description: 'Your global administrator password for McAfee ePO console login.
+      Must be a minimum of 8 characters and contain alpha, numeric, and a special
+      character.'
     MaxLength: 256
     MinLength: 8
     NoEcho: true
     Type: String
   ConfirmEPOAdminPassword:
     AllowedPattern: '((?=.*\d)(?=.*\W)(?!.*\")(?!.*\\)(?!.*\s).{8,256})'
-    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric, and a special character but it must not contain backslashes (\) or spaces or any double quotes (")'.
-    Description: 'Confirm your global administrator password for McAfee ePO console login. Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
+    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric,
+      and a special character but it must not contain backslashes (\) or spaces or
+      any double quotes (")'.
+    Description: 'Confirm your global administrator password for McAfee ePO console login.
+      Must be a minimum of 8 characters and contain alpha, numeric, and a special
+      character.'
     MaxLength: 256
     MinLength: 8
     NoEcho: true
@@ -256,15 +270,18 @@ Parameters:
   EPOPassphraseDR:
     AllowedPattern: '^[^\"\\\s]*$'
     ConstraintDescription: 'It must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
-    Description: 'The keystore encryption passphrase. This is required for disaster recovery. Server recovery passphrase must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
+    Description: 'Create a keystore encryption passphrase. This is required for disaster recovery. Server recovery passphrase must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
     MaxLength: 200
     MinLength: 14
     NoEcho: true
     Type: String
   ConfirmEPOPassphraseDR:
     AllowedPattern: '^[^\"\\\s]*$'
-    ConstraintDescription: 'It must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
-    Description: 'Confirm the keystore encryption passphrase. This is required for disaster recovery. Server recovery passphrase must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
+    ConstraintDescription: 'It must be 14 to 200 characters in length. It must not
+      contain backslashes (\) or spaces or any double quotes (")'
+    Description: 'Confirm the keystore encryption passphrase. This is required for disaster
+      recovery. Server recovery passphrase must be 14 to 200 characters in length.
+      It must not contain backslashes (\) or spaces or any double quotes (")'
     MaxLength: 200
     MinLength: 14
     NoEcho: true
@@ -312,7 +329,8 @@ Parameters:
     AllowedPattern: '[^@\/\"]+'
     ConstraintDescription: It can contain any printable ASCII character except "/", """, or "@". Must contain from 8 to 255 characters
     Description: >-
-      Confirm the password for the master user for the database. This password can contain any printable ASCII character except "/", """, or "@".
+      Confirm the password for the master user for the database. This password can contain
+      any printable ASCII character except "/", """, or "@".
       Must contain from 8 to 255 characters
     MaxLength: 255
     MinLength: 8
@@ -429,7 +447,7 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-gov-west-1:
-      MFEBASTIONHVM: ami-8df66dec
+      MFEBASTIONHVM: ami-d40665b5
 
 Resources:
 
