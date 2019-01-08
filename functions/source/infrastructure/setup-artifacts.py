@@ -144,10 +144,9 @@ def handle_stage_transitition(job_data):
     try:
         version = 0
         pipeline_execution_version = get_parameter_from_parameter_store(pipeline_execution_parameter)
-
+        
         # this is the first time pipeline is created, so its already in sync
         #just disable the stage transition to continue, update the parameter
-
         if "0" == pipeline_execution_version:
             print('Disabling the stage transition')
             response = code_pipeline.disable_stage_transition(pipelineName=pipeline_name, stageName=update_stage_name,

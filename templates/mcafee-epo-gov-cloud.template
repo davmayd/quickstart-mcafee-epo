@@ -1,68 +1,74 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: McAfee-ePO Workload stack which deploys McAfee ePO Platform components on AWS (Existing VPC)
+Description: McAfee-ePO Workload stack which deploys McAfee ePO Platform components
+  on AWS (Existing VPC) (qs-1oknn9kai)
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
-      - Label:
-          default: Network Configuration
-        Parameters:
-          - AvailabilityZones
-          - VPCID
-          - PrivateSubnet1ID
-          - PrivateSubnet2ID
-          - PublicSubnet1ID
-          - PublicSubnet2ID
-          - BastionSecurityGroupID
-      - Label:
-          default: McAfee ePolicy Orchestrator Platform Configuration
-        Parameters:
-          - ProtectedInstances
-          - Environment
-          - Availability
-          - KeyPairName
-      - Label:
-          default: On-Premise Domain Configuration
-        Parameters:
-          - OnPremiseDomainName
-          - OnPremiseServerDNS
-      - Label:
-          default: ePO Application Server Configuration
-        Parameters:
-          - EPOLicenseKey
-          - EPOAdminUserName
-          - EPOAdminPassword
-          - ConfirmEPOAdminPassword
-          - EPOPassphraseDR
-          - ConfirmEPOPassphraseDR
-          - EPOConsolePort
-          - EPOELBCertificateARN
-          - EPOAccessCIDR
-      - Label:
-          default: ePO Database - Amazon RDS (SQL Server) Configuration
-        Parameters:
-          - DBMasterUsername
-          - DBMasterUserPassword
-          - ConfirmDBMasterUserPassword
-          - DBPort
-          - DBAllocatedStorage
-          - DBBackupRetentionPeriod
-          - DBInstanceIdentifier
-      - Label:
-          default: Client Communication Configuration
-        Parameters:
-          - AHPort
-          - DXLPort
-          - ClientAccessCIDR
-      - Label:
-          default: Administration Configuration
-        Parameters:
-          - AdminEmailAddress
-          - AutoCleanup
-      - Label:
-          default: AWS Quick Start Configuration
-        Parameters:
-        - QSS3BucketName
-        - QSS3KeyPrefix
+    - Label:
+        default: Network Configuration
+      Parameters:
+      - AvailabilityZones
+      - VPCID
+      - PrivateSubnet1ID
+      - PrivateSubnet2ID
+      - PublicSubnet1ID
+      - PublicSubnet2ID
+      - BastionSecurityGroupID
+    - Label:
+        default: McAfee ePolicy Orchestrator Platform Configuration
+      Parameters:
+      - ProtectedInstances
+      - Environment
+      - DomainName
+      - SubDomainName
+      - Availability
+      - KeyPairName
+    - Label:
+        default: On-Premise Domain Configuration
+      Parameters:
+      - OnPremiseDomainName
+      - OnPremiseServerDNS
+    - Label:
+        default: ePO Application Server Configuration
+      Parameters:
+      - EPOLicenseKey
+      - EPOAdminUserName
+      - EPOAdminPassword
+      - ConfirmEPOAdminPassword
+      - EPOPassphraseDR
+      - ConfirmEPOPassphraseDR
+      - EPOConsolePort
+      - EPOELBCertificateARN
+      - EPOAccessCIDR
+    - Label:
+        default: ePO Database - Amazon RDS (SQL Server) Configuration
+      Parameters:
+      - DBMasterUsername
+      - DBMasterUserPassword
+      - ConfirmDBMasterUserPassword
+      - DBPort
+      - DBAllocatedStorage
+      - DBBackupRetentionPeriod
+      - DBInstanceIdentifier
+    - Label:
+        default: Client Communication Configuration
+      Parameters:
+      - AHPort
+      - DXLPort
+      - ClientAccessCIDR
+    - Label:
+        default: Administration Configuration
+      Parameters:
+      - EnableAutoUpdate
+      - AutoApproval
+      - ApproverEmailAddress
+      - AdminEmailAddress
+      - AutoCleanup
+    - Label:
+        default: AWS Quick Start Configuration
+      Parameters:
+      - QSS3BucketName
+      - QSS3KeyPrefix
     ParameterLabels:
       ProtectedInstances:
         default: Number of Endpoints
@@ -126,10 +132,10 @@ Metadata:
         default: Agent Handler Port
       DXLPort:
         default: DXL Port
-      AdminEmailAddress:
-        default: Operator Email
       ClientAccessCIDR:
         default: External Access CIDR
+      AdminEmailAddress:
+        default: Operator Email
       AutoCleanup:
         default: Auto Cleanup
       QSS3BucketName:
@@ -139,13 +145,13 @@ Metadata:
 Parameters:
   ProtectedInstances:
     AllowedValues:
-      - '1-10K'
-      - '10K-25K'
-      - '25K-75K'
-      - '75K-150K'
-      - '150K-250K'
-      - '250K-400K'
-      - '400K-500K'
+    - '1-10K'
+    - '10K-25K'
+    - '25K-75K'
+    - '75K-150K'
+    - '150K-250K'
+    - '250K-400K'
+    - '400K-500K'
     Default: '1-10K'
     Description: Select the number of endpoints that you want to manage.
     Type: String
@@ -161,10 +167,12 @@ Parameters:
       - 'Yes'
       - 'No'
     Default: 'Yes'
-    Description: We recommend selecting 'Yes' for production environments. It is applicable for Agent Handlers, DXL Brokers, RDS.
+    Description: We recommend selecting 'Yes' for production environments. It is applicable
+      for Agent Handlers, DXL Brokers, RDS.
     Type: String
   KeyPairName:
-    Description: The name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.
+    Description: The name of an existing public/private key pair, which allows you
+      to securely connect to your instance after it launches.
     Type: AWS::EC2::KeyPair::KeyName
   AvailabilityZones:
     Description: >-
@@ -192,18 +200,24 @@ Parameters:
   OnPremiseDomainName:
     AllowedPattern: ^$|^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
     Description: >-
-      [Optional] The on-premises domain name that you want to resolve from inside the VPC (e.g. mcafee.com).
-      This is required for DNS resolution between the ePO instance in the VPC and on-premises services like LDAP(ldap.mcafee.com).
-      Note: This is only required if you are planning to use Active Directory and if you are planning to use
+      [Optional] The on-premises domain name that you want to resolve from inside
+      the VPC (e.g. mcafee.com).
+      This is required for DNS resolution between the ePO instance in the VPC and
+      on-premises services like LDAP(ldap.mcafee.com).
+      Note: This is only required if you are planning to use Active Directory and
+      if you are planning to use
       a domain name instead of an IP address for the LDAP server.
     Default: ''
     Type: String
   OnPremiseServerDNS:
     Default: ''
     Description: >-
-      [Optional] The on-premises DNS (e.g. 192.168.1.1) that will be used to resolve the domain name queries.
-      This is required for DNS resolution between the ePO instance in VPC and services like LDAP(ldap.mcafee.com).
-      Note: This is only required if you are planning to use Active Directory if you are planning to use
+      [Optional] The on-premises DNS (e.g. 192.168.1.1) that will be used to resolve
+      the domain name queries.
+      This is required for DNS resolution between the ePO instance in VPC and services
+      like LDAP(ldap.mcafee.com).
+      Note: This is only required if you are planning to use Active Directory if you
+      are planning to use
       a domain name instead of an IP address for the LDAP server.
     MaxLength: 256
     Type: String
@@ -218,16 +232,23 @@ Parameters:
     Type: String
   EPOAdminPassword:
     AllowedPattern: '((?=.*\d)(?=.*\W)(?!.*\")(?!.*\\)(?!.*\s).{8,256})'
-    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric, and a special character but it must not contain backslashes (\) or spaces or any double quotes (")'.
-    Description: 'Your global administrator password for ePO Console Access.  Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
+    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric,
+      and a special character but it must not contain backslashes (\) or spaces or
+      any double quotes (")'.
+    Description: 'Your global administrator password for ePO Console Access.  Must be a minimum
+      of 8 characters and contain alpha, numeric, and a special character.'
     MaxLength: 256
     MinLength: 8
     NoEcho: true
     Type: String
   ConfirmEPOAdminPassword:
     AllowedPattern: '((?=.*\d)(?=.*\W)(?!.*\")(?!.*\\)(?!.*\s).{8,256})'
-    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric, and a special character but it must not contain backslashes (\) or spaces or any double quotes (")'.
-    Description: 'Confirm your global administrator password for McAfee ePO console login. Must be a minimum of 8 characters and contain alpha, numeric, and a special character.'
+    ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric,
+      and a special character but it must not contain backslashes (\) or spaces or
+      any double quotes (")'.
+    Description: 'Confirm your global administrator password for McAfee ePO console login.
+      Must be a minimum of 8 characters and contain alpha, numeric, and a special
+      character.'
     MaxLength: 256
     MinLength: 8
     NoEcho: true
@@ -242,8 +263,11 @@ Parameters:
     Type: String
   ConfirmEPOPassphraseDR:
     AllowedPattern: '^[^\"\\\s]*$'
-    ConstraintDescription: 'It must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
-    Description: 'Confirm the keystore encryption passphrase. This is required for disaster recovery. Server recovery passphrase must be 14 to 200 characters in length. It must not contain backslashes (\) or spaces or any double quotes (")'
+    ConstraintDescription: 'It must be 14 to 200 characters in length. It must not
+      contain backslashes (\) or spaces or any double quotes (")'
+    Description: 'Confirm the keystore encryption passphrase. This is required for disaster
+      recovery. Server recovery passphrase must be 14 to 200 characters in length.
+      It must not contain backslashes (\) or spaces or any double quotes (")'
     MaxLength: 200
     MinLength: 14
     NoEcho: true
@@ -291,7 +315,8 @@ Parameters:
     AllowedPattern: '[^@\/\"]+'
     ConstraintDescription: It can contain any printable ASCII character except "/", """, or "@". Must contain from 8 to 255 characters
     Description: >-
-      Confirm the password for the master user for the database. This password can contain any printable ASCII character except "/", """, or "@".
+      Confirm password for the master user for the database. This password can contain
+      any printable ASCII character except "/", """, or "@".
       Must contain from 8 to 255 characters
     MaxLength: 255
     MinLength: 8
@@ -419,9 +444,9 @@ Mappings:
       MFEEPOAGENTHANDLERHVM: McAfee ePO Agent Handler Image
       MFEDXLBROKERHVM: McAfee Data Exchange Layer Image
     us-gov-west-1:
-      MFEDXLBROKERHVM: ami-def66dbf
-      MFEEPOAGENTHANDLERHVM: ami-96fe65f7
-      MFEEPOSERVERHVM: ami-5cfe653d
+      MFEDXLBROKERHVM: ami-3b690a5a
+      MFEEPOAGENTHANDLERHVM: ami-9b5033fa
+      MFEEPOSERVERHVM: ami-01690a60
   NodeTierMap:
     '1-10K': {  'Tier': '1' }
     '10K-25K': {  'Tier': '2' }
@@ -461,11 +486,11 @@ Resources:
   # Base layer stack to create shared resources and setup
   Base:
     Type: AWS::CloudFormation::Stack
-    DependsOn: [CheckStackDetailsAction]
+    DependsOn: [CheckStackDetailsActionV1]
     Properties:
       Parameters:
         Environment: !Ref Environment
-        ParentStack: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+        ParentStack: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
         VPCID: !Ref VPCID
         PublicSubnet1ID: !Ref PublicSubnet1ID
         PublicSubnet2ID: !Ref PublicSubnet2ID
@@ -489,7 +514,7 @@ Resources:
         - Key: Solution
           Value: McAfee-ePO
         - Key: mcafee:cloudformation:stack-name
-          Value: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+          Value: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-base.template
 
   # Database stack
@@ -502,7 +527,7 @@ Resources:
         Environment: !Ref Environment
         Availability: !Ref Availability
         BaseStack: !Select [1, !Split ["/", !Ref Base ]]
-        ParentStack: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+        ParentStack: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
         DBMasterUsername: !Ref DBMasterUsername
         DBMasterUserPassword: !Ref DBMasterUserPassword
         ConfirmDBMasterUserPassword: !Ref ConfirmDBMasterUserPassword
@@ -519,7 +544,7 @@ Resources:
         DBIops: !FindInMap [ DBIopsMap, !Ref Environment, !FindInMap [ NodeTierMap, !Ref ProtectedInstances, Tier ] ]
         DBInstanceIdentifier: !Join
             - ''
-            - - !GetAtt [ CheckStackDetailsAction, ParentStack ]
+            - - !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
               - !Sub '-rds'
         AdminEmailAddress: !Ref AdminEmailAddress
       Tags:
@@ -534,7 +559,7 @@ Resources:
         - Key: Solution
           Value: McAfee-ePO
         - Key: mcafee:cloudformation:stack-name
-          Value: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+          Value: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-database.template
 
   # ePO Application Server Stack
@@ -545,7 +570,7 @@ Resources:
       Parameters:
         Environment: !Ref Environment
         KeyPairName: !Ref KeyPairName
-        ParentStack: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+        ParentStack: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
         BaseStack: !Select [1, !Split ["/", !Ref Base ]]
         OnPremiseDomainName: !Ref OnPremiseDomainName
         OnPremiseServerDNS: !Ref OnPremiseServerDNS
@@ -584,7 +609,7 @@ Resources:
         - Key: Solution
           Value: McAfee-ePO
         - Key: mcafee:cloudformation:stack-name
-          Value: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+          Value: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-appserver.template
 
   # ePO Agent Handler Stack
@@ -596,7 +621,7 @@ Resources:
         Environment: !Ref Environment
         Availability: !Ref Availability
         KeyPairName: !Ref KeyPairName
-        ParentStack: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+        ParentStack: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
         BaseStack: !Select [1, !Split ["/", !Ref Base ]]
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
@@ -627,7 +652,7 @@ Resources:
         - Key: Solution
           Value: McAfee-ePO
         - Key: mcafee:cloudformation:stack-name
-          Value: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+          Value: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-agenthandler.template
 
   # Data Exchange Layer Stack
@@ -639,7 +664,7 @@ Resources:
         Environment: !Ref Environment
         Availability: !Ref Availability
         KeyPairName: !Ref KeyPairName
-        ParentStack: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+        ParentStack: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
         BaseStack: !Select [1, !Split ["/", !Ref Base ]]
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
@@ -667,7 +692,7 @@ Resources:
         - Key: Solution
           Value: McAfee-ePO
         - Key: mcafee:cloudformation:stack-name
-          Value: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+          Value: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-dxl.template
 
   # pipeline Stack
@@ -679,13 +704,13 @@ Resources:
     Properties:
       Parameters:
         Environment: !Ref Environment
-        ParentStack: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+        ParentStack: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
         EPOConsoleURL: !GetAtt ePO.Outputs.ePOConsoleLBURL
         EPOELBName: !GetAtt ePO.Outputs.ePOLoadbalancerName
         EPOSystemCheckAlarmARN: !GetAtt ePO.Outputs.EPOEC2SystemStatusCheckARN
         EPOStatusCheckAlarmARN: !GetAtt ePO.Outputs.EPOEC2InstanceStatusCheckARN
         EPOInstanceID: !GetAtt ePO.Outputs.EPOEC2Instance
-        ParentStackID: !GetAtt [ CheckStackDetailsAction, ParentStackID ]
+        ParentStackID: !GetAtt [ CheckStackDetailsActionV1, ParentStackID ]
         DatastoreBucketName: !GetAtt Base.Outputs.DataStore
         AvailabilityZones:
                     !Join
@@ -713,7 +738,7 @@ Resources:
         - Key: Solution
           Value: McAfee-ePO
         - Key: mcafee:cloudformation:stack-name
-          Value: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+          Value: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       TemplateURL: !Sub https://${QSS3BucketName}.s3-${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-dashboard.template
 
 
@@ -729,8 +754,8 @@ Resources:
       ParameterStoreIdentifier: !Join
           - ''
           - - '/mcafee/'
-            - !GetAtt [ CheckStackDetailsAction, ParentStack ]
-      ParentStack: !GetAtt [ CheckStackDetailsAction, ParentStack ]
+            - !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
+      ParentStack: !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       PipelineMasterStackTemplateName: 'mcafee-epo.template'
       PipelineMasterStackTemplateConfigName: 'config.json'
       PipelineCloudformationIAMRoleARN: !GetAtt WorkloadCloudformationRole.Arn
@@ -780,13 +805,13 @@ Resources:
       StackURL: !Join
           - ''
           - - !Sub 'https://console.amazonaws-us-gov.com/cloudformation/home?region=${AWS::Region}#/stack/detail?stackId='
-            - !GetAtt [ CheckStackDetailsAction, ParentStackID ]
+            - !GetAtt [ CheckStackDetailsActionV1, ParentStackID ]
       EPOConsoleURL: !GetAtt ePO.Outputs.ePOConsoleLBURL
       DashboardURL: !GetAtt Dashboard.Outputs.DashboardURL
       ParameterStoreIdentifier: !Join
           - ''
           - - '/mcafee/'
-            - !GetAtt [ CheckStackDetailsAction, ParentStack ]
+            - !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       EPOELBURL: !GetAtt ePO.Outputs.EPOLoadBalancerURL
       AHELBURL: !GetAtt AH.Outputs.AHLoadBalancerURL
       DXLELBURL: !GetAtt DXL.Outputs.DXLLoadBalancerURL
@@ -801,7 +826,7 @@ Resources:
             "DXLPort": "${DXLPort}"
           }
         - ParentStack:
-            !GetAtt [ CheckStackDetailsAction, ParentStack ]
+            !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       ResourceGroupHandlerData: !Sub
         - |
           {
@@ -818,129 +843,34 @@ Resources:
             }
           }
         - ParentStack:
-            !GetAtt [ CheckStackDetailsAction, ParentStack ]
+            !GetAtt [ CheckStackDetailsActionV1, ParentStack ]
       LocalAHRegistrationHandlerData:
         EPOInstanceID: !GetAtt ePO.Outputs.EPOEC2Instance
         AHELBName: !GetAtt AH.Outputs.AHLoadBalancer
 
-  ##############################################################################
-  # Check Stack Details, validates custom parameters and gets the stack details
-  ##############################################################################
-  # Check stack details lambda role
-  CheckStackDetailsLambdaRole:
-    Type: AWS::IAM::Role
-    DependsOn: [ WorkloadCloudformationRole ]
+  # Base layer stack to create shared resources and setup
+  Utils:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: [ WorkloadCloudformationRole ]  #TODO Vinod do we need this?
     Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Path: /
-      Policies:
-        - PolicyName: CheckStackDetailsLambdaRole
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - cloudformation:DescribeStacks
-                  - cloudformation:DescribeStackResource
-                  - iam:GetRole
-                Resource: '*'
-
-  # Check stack details lambda
-  CheckStackDetailsLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: index.handler
-      Role: !GetAtt  CheckStackDetailsLambdaRole.Arn
-      MemorySize: 128
-      Runtime: python3.6
-      Timeout: 120
-      Code:
-        ZipFile: !Sub |
-          #!/usr/bin/env python3
-          import json
-          import boto3
-          import cfnresponse
-
-          cfn = boto3.client('cloudformation')
-
-          def check_stack_details(user_data, response):
-              result = cfn.describe_stacks(StackName=user_data['StackName'])
-              if 'Stacks'  in result:
-                  if 'RootId' in result['Stacks'][0]:
-                      root_stack_id = result['Stacks'][0]['RootId']
-                      root_stack_name = root_stack_id.split('/')[1]
-                      response['ParentStack'] = root_stack_name
-                      response['ParentStackID'] = root_stack_id
-                  else:
-                      response['ParentStack'] = user_data['StackName']
-                      response['ParentStackID'] = result['Stacks'][0]['StackId']
-                  return response
-              return False
-
-          def handler(event, context):
-              print('Received event: %s' % json.dumps(event))
-              try:
-                  user_data = event.get('ResourceProperties')
-                  status = cfnresponse.SUCCESS
-                  response = {}
-                  request_type = event['RequestType']
-                  if request_type != 'Delete':
-                    response = check_stack_details(user_data, response)
-                    print(response)
-                    if False == response:
-                        status = cfnresponse.FAILED
-                  cfnresponse.send(event, context, status, response, None)
-              except Exception as e:
-                  print('Exception in handling the request, %s' % (str(e)))
-                  cfnresponse.send(event, context, cfnresponse.FAILED, {}, None)
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-CheckStackDetailsLambda
+          Value: !Sub ${AWS::StackName}-Base
         - Key: Owner
           Value: !Ref AdminEmailAddress
         - Key: Environment
           Value: !Ref Environment
         - Key: Product
-          Value: McAfee-ePO
+          Value: McAfee-ePO-Base-Stack
         - Key: Solution
           Value: McAfee-ePO
-
-  # Check stack details lambda version
-  CheckStackDetailsLambdaVersion1:
-    Type: AWS::Lambda::Version
-    Properties:
-      FunctionName: !Ref CheckStackDetailsLambda
-
-  # Check stack details lambda log group
-  CheckStackDetailsLambdaLogGroup:
-    Type: AWS::Logs::LogGroup
-    DependsOn: CheckStackDetailsLambda
-    Properties:
-      LogGroupName: !Join
-            - ''
-            - - '/aws/lambda/'
-              - !Ref CheckStackDetailsLambda
-      RetentionInDays: 7
+      TemplateURL: !Sub https://${QSS3BucketName}.s3-${AWS::Region}.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-utils.template
 
   # Check stack details custom action
-  CheckStackDetailsAction:
+  CheckStackDetailsActionV1:
     Type: Custom::CheckStackDetailsAction
-    DependsOn: [ CheckStackDetailsLambdaLogGroup ]
     Properties:
-      ServiceToken:  !GetAtt CheckStackDetailsLambda.Arn
+      ServiceToken:  !GetAtt Utils.Outputs.CheckStackDetailsLambdaArn
       StackName: !Sub ${AWS::StackName}
 
   # Workload Cloudformation IAM Role for AWS CodePipeline

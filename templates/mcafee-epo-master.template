@@ -180,12 +180,14 @@ Parameters:
       We recommend either to register Amazon Route 53 domain name so that public DNS
       records can be propagated automatically
       OR add the sub domain Name Server(NS) records into your main domain server.
+      If this domain is not managed by Amazon Route 53, then leave this field blank.
     Default: ''
     Type: String
   SubDomainName:
     AllowedPattern: ^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
     Description: >-
-      The non-existent sub domain name to be used for managment solution. (e.g. manage.mcafee.com
+      The non-existent fully-qualified domain name to be used for managment solution.
+      (e.g. manage.mcafee.com
       ). We recommend either to register Amazon Route 53
       domain name so that public DNS records can be propagated automatically OR add
       the sub domain Name Server(NS) records into your main domain server.
@@ -309,8 +311,8 @@ Parameters:
     ConstraintDescription: Must be minimum of 8 characters and contain alpha, numeric,
       and a special character but it must not contain backslashes (\) or spaces or
       any double quotes (")'.
-    Description: 'Confirm your global administrator password for McAfee ePO console login.
-      Must be a minimum of 8 characters and contain alpha, numeric, and a special
+    Description: 'Confirm your global administrator password for McAfee ePO console
+      login. Must be a minimum of 8 characters and contain alpha, numeric, and a special
       character.'
     MaxLength: 256
     MinLength: 8
@@ -331,9 +333,9 @@ Parameters:
     AllowedPattern: '^[^\"\\\s]*$'
     ConstraintDescription: 'It must be 14 to 200 characters in length. It must not
       contain backslashes (\) or spaces or any double quotes (")'
-    Description: 'Confirm the keystore encryption passphrase. This is required for disaster
-      recovery. Server recovery passphrase must be 14 to 200 characters in length.
-      It must not contain backslashes (\) or spaces or any double quotes (")'
+    Description: 'Confirm the keystore encryption passphrase. This is required for
+      disaster recovery. Server recovery passphrase must be 14 to 200 characters in
+      length. It must not contain backslashes (\) or spaces or any double quotes (")'
     MaxLength: 200
     MinLength: 14
     NoEcho: true
@@ -387,7 +389,8 @@ Parameters:
     ConstraintDescription: It can contain any printable ASCII character except "/",
       """, or "@". Must contain from 8 to 255 characters
     Description: >-
-      Confirm the password for the master user for the database. This password can contain
+      Confirm the password for the master user for the database. This password can
+      contain
       any printable ASCII character except "/", """, or "@".
       Must contain from 8 to 255 characters
     MaxLength: 255
@@ -457,14 +460,17 @@ Parameters:
     Default: 'Automatic'
     Description: >-
       Auto or Manual approval to review the change sets on auto updates of stack components.
-      Note: If you don’t want auto approval (i.e. with Update after Approval selected), provide the email address of the approver. This enables notifications to be sent for approval. Otherwise, the approver will have to watch the pipeline periodically for approvals.
+      Note: If you don’t want auto approval (i.e. with Update after Approval selected),
+      provide the email address of the approver. This enables notifications to be
+      sent for approval. Otherwise, the approver will have to watch the pipeline periodically
+      for approvals.
     Type: String
   ApproverEmailAddress:
     AllowedPattern: ^(?![\s\S])|(([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?))
     ConstraintDescription: Must be a valid email address.
     Default: ''
     Description: Approver Email address where approval will be sent in case of auto
-      updates if AutoApproval is not selected.
+      updates if AutoAproval is not selected.
     Type: String
   AdminEmailAddress:
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)
@@ -554,26 +560,26 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-west-2:
-      MFEBASTIONHVM: ami-01c57dccfcb8a4e75
+      MFEBASTIONHVM: ami-06ddc16c0fa1ef904
 
-    us-east-1:
-      MFEBASTIONHVM: ami-0252481ff3e88545b
-    ap-northeast-1:
-      MFEBASTIONHVM: ami-0e510dbd6edd9a22c
-    eu-west-2:
-      MFEBASTIONHVM: ami-0bf056d3af5488438
     ap-southeast-1:
-      MFEBASTIONHVM: ami-0fd5f92995552773b
-    ap-southeast-2:
-      MFEBASTIONHVM: ami-0854e862c6ca7fa45
-    ca-central-1:
-      MFEBASTIONHVM: ami-0f0826aab7c3b1a38
-    us-west-1:
-      MFEBASTIONHVM: ami-0c78f9c10d5b5bd88
-    eu-central-1:
-      MFEBASTIONHVM: ami-05c40d0a3e29c83d9
+      MFEBASTIONHVM: ami-0cdbbbf1c8374487d
     us-east-2:
-      MFEBASTIONHVM: ami-05052d079a937eb90
+      MFEBASTIONHVM: ami-042fed3adcb214041
+    ca-central-1:
+      MFEBASTIONHVM: ami-06f974e3f923f9657
+    eu-central-1:
+      MFEBASTIONHVM: ami-09dcb40e6f0ac5e04
+    ap-southeast-2:
+      MFEBASTIONHVM: ami-05113e15c457e4e4c
+    us-west-1:
+      MFEBASTIONHVM: ami-0a19a9392aa5bb5fe
+    us-east-1:
+      MFEBASTIONHVM: ami-08320ffb628d4d54b
+    eu-west-2:
+      MFEBASTIONHVM: ami-03a1d3fe4aa60f09d
+    ap-northeast-1:
+      MFEBASTIONHVM: ami-0bfb613b0023626d8
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
