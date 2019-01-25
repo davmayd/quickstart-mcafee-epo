@@ -447,7 +447,7 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-gov-west-1:
-      MFEBASTIONHVM: ami-d40665b5
+      MFEBASTIONHVM: ami-5d29443c
 
 Resources:
 
