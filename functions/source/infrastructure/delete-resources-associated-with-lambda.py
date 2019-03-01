@@ -50,9 +50,9 @@ def handler(event, context):
                           sleep(10)
                           retry_attempts += 1
 
-                        # Delete the eni
-                        print('Deleting ENI %s' % eni['NetworkInterfaceId'])
-                        ec2client.delete_network_interface(NetworkInterfaceId=eni['NetworkInterfaceId'])
+                    # Delete the eni
+                    print('Deleting ENI %s' % eni['NetworkInterfaceId'])
+                    ec2client.delete_network_interface(NetworkInterfaceId=eni['NetworkInterfaceId'])
 
             return send_response(event, response, status='SUCCESS', reason='Successfully deleted the resources associated with lambda')
         else:

@@ -11,7 +11,7 @@ global:
     - ca-central-1
     - eu-central-1
     - eu-west-2
-#    - eu-west-3
+    - eu-west-3
     - ap-southeast-1 
     - ap-southeast-2
     - ap-northeast-1
@@ -53,11 +53,11 @@ tests:
       - eu-west-2
     template_file: mcafee-epo-master.template
     parameter_input: stack-params-eu-west-2.json
-#  mcafee-epo-t8:
-#    regions:
-#      - eu-west-3
-#    template_file: mcafee-epo-master.template
-#    parameter_input: stack-params-eu-west-3.json
+  mcafee-epo-t8:
+    regions:
+      - eu-west-3
+    template_file: mcafee-epo-master.template
+    parameter_input: stack-params-eu-west-3.json
   mcafee-epo-t9:
     regions:
       - ap-southeast-1

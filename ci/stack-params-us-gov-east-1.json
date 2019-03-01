@@ -8,14 +8,6 @@
      "ParameterValue": "Production"
     },
     {
-     "ParameterKey": "DomainName",
-     "ParameterValue": ""
-    },
-    {
-     "ParameterKey": "SubDomainName",
-     "ParameterValue": ""
-    },
-    {
      "ParameterKey": "Availability",
      "ParameterValue": "Yes"
     },
