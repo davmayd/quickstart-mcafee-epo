@@ -189,18 +189,7 @@ def remote_command_handler(user_data, request_type):
     try:
         cmd_data = json.loads(user_data['RemoteCommandHandlerData'])
         print(cmd_data)
-        if request_type == 'Create':
-            group_name = 'vgroup_' + cmd_data['ParentStackName']
-            assignment_name = 'vassign_' + cmd_data['ParentStackName']
-            epo_dns_name = user_data['EPOServerDNSName']
-            ah_url = user_data['AHServerDNSName']
-            ah_elb_url = user_data['AHServerDNSName']
-            dxl_elb_url = user_data['DXLELBURL']
-            dxl_port = cmd_data['DXLPort']
-            if 'DomainName' not in cmd_data or '' == cmd_data['DomainName']:
-                epo_dns_name = user_data['EPOELBURL']
-                ah_elb_url = user_data['AHELBURL']
-
+        if request_type == 'Create' or request_type == 'Update':
             parameter_store_identifier = user_data['ParameterStoreIdentifier']
             response = ssm.get_parameter(Name=parameter_store_identifier+'/EPOAdminUserName')
             epo_username = response['Parameter']['Value']
@@ -214,29 +203,53 @@ def remote_command_handler(user_data, request_type):
             auth = b64encode(auth_string.encode()).decode("ascii")
             headers = { 'Authorization' : 'Basic %s' %  auth }
 
-            # Remote command to set AH virtual group
-            ah_remote_cmd_path = '/remote/AgentMgmt.createAgentHandlerGroup?groupName=' + group_name + '&enabled=true&loadBalancerSet=true&virtualIP=' + ah_url + '&virtualDNSName=' + ah_elb_url + '&virtualNetBiosName=' + ah_url
-            https = http.client.HTTPSConnection(epo_hostname, epo_port, context=ssl._create_unverified_context())
-            https.request('POST', ah_remote_cmd_path, headers=headers)
-            response = https.getresponse()
-            print(response.status, response.reason)
+            if request_type == 'Create':
+                group_name = 'vgroup_' + cmd_data['ParentStackName']
+                assignment_name = 'vassign_' + cmd_data['ParentStackName']
+                epo_dns_name = user_data['EPOServerDNSName']
+                ah_url = user_data['AHServerDNSName']
+                ah_elb_url = user_data['AHServerDNSName']
+                dxl_elb_url = user_data['DXLELBURL']
+                dxl_port = cmd_data['DXLPort']
 
-            # Remote command to set DXL loadbalancer info
-            dxl_remote_cmd_path = '/remote/DxlBrokerMgmt.setLoadBalancerInfo?dnsName=' + dxl_elb_url + '&ipAddress=' + dxl_elb_url + '&port=' + dxl_port
-            https = http.client.HTTPSConnection(epo_hostname, epo_port, context=ssl._create_unverified_context())
-            https.request('POST', dxl_remote_cmd_path, headers=headers)
-            response = https.getresponse()
-            print(response.status, response.reason)
+                if 'DomainName' not in cmd_data or '' == cmd_data['DomainName']:
+                    epo_dns_name = user_data['EPOELBURL']
+                    ah_elb_url = user_data['AHELBURL']
 
-            # Remote command to set ePO DNS name for Agent deployment url
-            epo_remote_cmd_path = '/remote/EPOCore.setAgentDeploymentURLServerCmd?agentDeploymentURLServer=' + epo_dns_name
-            https = http.client.HTTPSConnection(epo_hostname, epo_port, context=ssl._create_unverified_context())
-            https.request('POST', epo_remote_cmd_path, headers=headers)
-            response = https.getresponse()
-            print(response.status, response.reason)
+                # Remote command to set AH virtual group
+                ah_remote_cmd_path = '/remote/AgentMgmt.createAgentHandlerGroup?groupName=' + group_name + '&enabled=true&loadBalancerSet=true&virtualIP=' + ah_url + '&virtualDNSName=' + ah_elb_url + '&virtualNetBiosName=' + ah_url
+                https = http.client.HTTPSConnection(epo_hostname, epo_port, context=ssl._create_unverified_context())
+                https.request('POST', ah_remote_cmd_path, headers=headers)
+                response = https.getresponse()
+                print(response.status, response.reason)
 
-        elif request_type == 'Delete' or request_type == 'Update':
-            print('nothing to do for remote command handler in case of update or delete request type')
+                # Remote command to set DXL loadbalancer info
+                dxl_remote_cmd_path = '/remote/DxlBrokerMgmt.setLoadBalancerInfo?dnsName=' + dxl_elb_url + '&ipAddress=' + dxl_elb_url + '&port=' + dxl_port
+                https = http.client.HTTPSConnection(epo_hostname, epo_port, context=ssl._create_unverified_context())
+                https.request('POST', dxl_remote_cmd_path, headers=headers)
+                response = https.getresponse()
+                print(response.status, response.reason)
+
+                # Remote command to set ePO DNS name for Agent deployment url
+                epo_remote_cmd_path = '/remote/EPOCore.setAgentDeploymentURLServerCmd?agentDeploymentURLServer=' + epo_dns_name
+                https = http.client.HTTPSConnection(epo_hostname, epo_port, context=ssl._create_unverified_context())
+                https.request('POST', epo_remote_cmd_path, headers=headers)
+                response = https.getresponse()
+                print(response.status, response.reason)
+
+            if request_type == 'Create' or request_type == 'Update':
+                # Remote command to set OptInOut for Telemetry data setting on Server Settings
+                if 'TelemetryOption' in cmd_data:
+                    print('Setting Telemetry option: ' + cmd_data['TelemetryOption'])
+                    telemetry_option = 'true' if 'Yes' == cmd_data['TelemetryOption'] else 'false'
+                    epo_remote_cmd_path = '/remote/epo.command.CreateOrionServerPropertiesInDb?keyColumn=optInOut&valueColumn=' + telemetry_option
+                    https = http.client.HTTPSConnection(epo_hostname, epo_port, context=ssl._create_unverified_context())
+                    https.request('POST', epo_remote_cmd_path, headers=headers)
+                    response = https.getresponse()
+                    print(response.status, response.reason)
+
+        elif request_type == 'Delete':
+            print('nothing to do for remote command handler in case of delete request type')
 
     except Exception as e:
         print('failed to execute remote commands %s' %(str(e)))

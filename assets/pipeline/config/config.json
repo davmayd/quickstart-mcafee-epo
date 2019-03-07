@@ -22,6 +22,7 @@
     "EPOPassphraseDR": "",
     "ConfirmEPOPassphraseDR": "",
     "EPOConsolePort": "",
+    "TelemetryOption": "Yes",
     "EPOELBCertificateARN": "",
     "EPOAccessCIDR": "",
     "DBMasterUsername": "",

@@ -8,7 +8,7 @@
     "Name": "Agent Handler"
 	},
 	"DXL": {
-		"BuildVersion": "5.0.0.546.1",
+		"BuildVersion": "5.0.1.198.1",
     "Name": "Data Exchange Layer Broker"
 	}
 }

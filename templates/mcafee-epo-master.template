@@ -39,6 +39,7 @@ Metadata:
       - EPOPassphraseDR
       - ConfirmEPOPassphraseDR
       - EPOConsolePort
+      - TelemetryOption
       - EPOELBCertificateARN
       - EPOAccessCIDR
     - Label:
@@ -115,6 +116,8 @@ Metadata:
         default: Confirm DR Passphrase
       EPOConsolePort:
         default: Console Port
+      TelemetryOption:
+        default: Enable Product Improvement Program
       EPOELBCertificateARN:
         default: Load Balancer Certificate ARN
       EPOAccessCIDR:
@@ -346,6 +349,14 @@ Parameters:
     MinLength: 1
     MaxLength: 64
     Type: String
+  TelemetryOption:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'Yes'
+    Description: Allow the collection of product performance and usage information
+      to help McAfee provide better products and services.
+    Type: String
   EPOELBCertificateARN:
     AllowedPattern: ^$|((arn:aws:)|(arn:aws-us-gov:))([a-z])([a-z0-9/:-])*([a-z0-9])$
     Default: ''
@@ -476,7 +487,7 @@ Parameters:
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)
     ConstraintDescription: Must be a valid email address.
     Description: Email address that notifications of any operations will be sent.
-      In addtion this will be used for tagging of ownership of resources.
+      In addition this will be used for tagging of ownership of resources.
     Type: String
   AutoCleanup:
     AllowedValues:
@@ -560,26 +571,28 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-west-2:
-      MFEBASTIONHVM: ami-063d4fad760b261cf
+      MFEBASTIONHVM: ami-0060a4a0503937064
 
-    ap-southeast-1:
-      MFEBASTIONHVM: ami-034cc13026c53d3a0
+    eu-west-3:
+      MFEBASTIONHVM: ami-0aea0a5d98f9bb930
     us-west-1:
-      MFEBASTIONHVM: ami-00a2516c1fbe21a4a
-    eu-west-2:
-      MFEBASTIONHVM: ami-0c1fcc384a3be74d9
-    eu-central-1:
-      MFEBASTIONHVM: ami-0b468b52abcca3659
-    ap-southeast-2:
-      MFEBASTIONHVM: ami-0885786096578c9c5
-    us-east-1:
-      MFEBASTIONHVM: ami-0c4ea6a001b50fc03
-    ap-northeast-1:
-      MFEBASTIONHVM: ami-03cab73b218233c56
-    us-east-2:
-      MFEBASTIONHVM: ami-00ed86b37e5a85af8
+      MFEBASTIONHVM: ami-016a4d54358349f89
     ca-central-1:
-      MFEBASTIONHVM: ami-0aff6beba9c9219a7
+      MFEBASTIONHVM: ami-0cc8c3839f6d15ee3
+    eu-central-1:
+      MFEBASTIONHVM: ami-049106b24c66cb42a
+    ap-southeast-1:
+      MFEBASTIONHVM: ami-0248e06c539528587
+    eu-west-2:
+      MFEBASTIONHVM: ami-043037385fbe7206d
+    ap-southeast-2:
+      MFEBASTIONHVM: ami-093d07ed53269fe51
+    us-east-2:
+      MFEBASTIONHVM: ami-076bf8b225eb71a31
+    ap-northeast-1:
+      MFEBASTIONHVM: ami-092dd9969ede68cc0
+    us-east-1:
+      MFEBASTIONHVM: ami-03f1cf5d41b44dec8
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
@@ -673,6 +686,7 @@ Resources:
         EPOPassphraseDR: !Ref EPOPassphraseDR
         ConfirmEPOPassphraseDR: !Ref ConfirmEPOPassphraseDR
         EPOConsolePort: !Ref EPOConsolePort
+        TelemetryOption: !Ref TelemetryOption
         EPOELBCertificateARN: !Ref EPOELBCertificateARN
         EPOAccessCIDR: !Ref EPOAccessCIDR
         DBMasterUsername: !Ref DBMasterUsername

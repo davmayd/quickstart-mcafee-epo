@@ -1,4 +1,4 @@
-  [  
+  [
     {
      "ParameterKey": "ProtectedInstances",
      "ParameterValue": "1-10K"
@@ -21,7 +21,7 @@
     },
     {
      "ParameterKey": "KeyPairName",
-     "ParameterValue": "$[alfred_getkeypair]" 
+     "ParameterValue": "$[alfred_getkeypair]"
     },
     {
      "ParameterKey": "AvailabilityZones",
@@ -113,7 +113,7 @@
     },
     {
      "ParameterKey": "AutoApproval",
-     "ParameterValue": "Automatic"
+     "ParameterValue": "Update after Approval"
     },
     {
      "ParameterKey": "AdminEmailAddress",
@@ -147,4 +147,4 @@
      "ParameterKey": "ConfirmEPOPassphraseDR",
      "ParameterValue": ""
     }
-]
+  ]
