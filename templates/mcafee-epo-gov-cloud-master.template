@@ -502,10 +502,10 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-gov-west-1:
-      MFEBASTIONHVM: ami-61f89000
+      MFEBASTIONHVM: ami-3b11645a
 
     us-gov-east-1:
-      MFEBASTIONHVM: ami-02de212eb762f71e2
+      MFEBASTIONHVM: ami-030f2e0431172b885
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
