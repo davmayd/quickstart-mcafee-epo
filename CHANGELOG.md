@@ -1,4 +1,17 @@
 # Changelog
+
+## 1.0.154 (3/21/2019)
+
+### New Features:
+- **McAfee ePolicy Orchestrator 5.10.0 Update 3**\
+     New image (AMI) available for Agent Handler with Update 3 . This update resolves known issues from McAfee ePO 5.10.0 release. Update 3 is cumulative in nature and includes fixes from Update 1.
+     
+### Bug Fixes:
+- Please refer the Update 3 release notes for complete list of bug fixes:
+
+  https://kc.mcafee.com/resources/sites/MCAFEE/content/live/PRODUCT_DOCUMENTATION/28000/PD28210/en_US/March12_EPO_5_10_Update3_RN.PDF
+    
+
 ## 1.0.151 (3/1/2019)
 
 ### New Features:
