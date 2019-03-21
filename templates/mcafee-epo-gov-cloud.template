@@ -483,13 +483,13 @@ Mappings:
       MFEEPOAGENTHANDLERHVM: McAfee ePO Agent Handler Image
       MFEDXLBROKERHVM: McAfee Data Exchange Layer Image
     us-gov-west-1:
-      MFEDXLBROKERHVM: ami-93f991f2
-      MFEEPOAGENTHANDLERHVM: ami-dffd95be
-      MFEEPOSERVERHVM: ami-2cfc944d
+      MFEDXLBROKERHVM: ami-a41560c5
+      MFEEPOAGENTHANDLERHVM: ami-34106555
+      MFEEPOSERVERHVM: ami-751d6814
     us-gov-east-1:
-      MFEEPOSERVERHVM: ami-08119b493d88b9138
-      MFEEPOAGENTHANDLERHVM: ami-0ff63770c856c7b47
-      MFEDXLBROKERHVM: ami-026b8532f02a39658
+      MFEEPOSERVERHVM: ami-0fd133194f75924d4
+      MFEEPOAGENTHANDLERHVM: ami-001efd103f6e58454
+      MFEDXLBROKERHVM: ami-02fe5fc36f7fe1551
   NodeTierMap:
     '1-10K': {'Tier': '1'}
     '10K-25K': {'Tier': '2'}
