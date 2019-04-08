@@ -4,7 +4,7 @@
 
 ### Bug Fixes:
 
- - **1266081**: Deployment on an existing VPC using customer domain name and DNS server.
+ - Enabled DNS fallback to support hybrid DNS
 
 ## 1.0.154 (3/21/2019)
 
