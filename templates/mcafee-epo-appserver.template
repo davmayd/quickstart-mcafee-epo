@@ -383,10 +383,7 @@ Resources:
           "OnPremiseDomainName": {"Type": "String","Value": "${OnPremiseDomainName}","Description": "On Premise domain name."},
           "OnPremiseServerDNS": {"Type": "String","Value": "${OnPremiseServerDNS}","Description": "On Premise DNS server IP."}
         }
-      - EPOServerDNSName: !If
-          - cNotGovCloudCondition
-          - !Sub epo.${SubDomainName}
-          - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
+      - EPOServerDNSName: !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
 
   # Sync ePO instance parameters lambda role
   SyncEPOInstanceParametersLambdaRole:
@@ -760,11 +757,14 @@ Resources:
                   path=Resources.epo.Metadata.AWS::CloudFormation::Init
                   action=cfn-init.exe -v -s ${AWS::StackName} -r EPOEC2Instance --region ${AWS::Region}
             # No harm to add this entry in Non-Gov cloud env
-            C:\Windows\System32\drivers\etc\hosts:
+            c:\Windows\System32\drivers\etc\hosts:
               content: !Join
                 - ' '
                 - - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
-                  - !GetAtt EPOLoadBalancer.DNSName
+                  - !If
+                    - cNotGovCloudCondition
+                    - !Sub epo.${SubDomainName}
+                    - !GetAtt EPOLoadBalancer.DNSName
           services:
             windows:
               cfn-hup:
@@ -1053,34 +1053,6 @@ Resources:
         Fn::ImportValue: !Sub ${BaseStack}-R53PublicHostedZone
       Name:  !Sub epo.${SubDomainName}
       Type: A
-
-  # ePO Record Set in private hosted zone
-  EPOR53PrivateRecordSet:
-    Type: AWS::Route53::RecordSet
-    Condition: cNotGovCloudCondition
-    Properties:
-      HostedZoneId:
-        Fn::ImportValue: !Sub ${BaseStack}-R53PrivateHostedZone
-      Comment: 'Internal ePO RecordSet'
-      Name:  !Sub epo.${SubDomainName}
-      Type: A
-      TTL: '600'
-      ResourceRecords:
-        - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
-
-  # Local AH Recored set in private hosted zone - it will be used by DXL brokers which are in VPC.
-  LAHR53PrivateRecordSet:
-    Type: AWS::Route53::RecordSet
-    Condition: cNotGovCloudCondition
-    Properties:
-      HostedZoneId:
-        Fn::ImportValue: !Sub ${BaseStack}-R53PrivateHostedZone
-      Comment: 'Internal Local AH RecordSet'
-      Name:  !Sub ah.${SubDomainName}
-      Type: A
-      TTL: '600'
-      ResourceRecords:
-        - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
 
   # ePO ec2 SNS topic name for recovery and reboot
   EPOEC2SnsTopic:
@@ -1524,10 +1496,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt EPOPostDeployLambda.Arn
       ParentStack: !Sub ${ParentStack}
-      EPOConsoleURL: !If
-        - cNotGovCloudCondition
-        - !Sub epo.${SubDomainName}
-        - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
+      EPOConsoleURL: !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
       EPOConsolePort: !Sub ${EPOConsolePort}
       EPOHTTPSListenerARN: !Ref EPOLoadBalancerListenerWithSelfSignedCert
       LAHHTTPSListenerARN: !Ref EPOLoadBalancerLocalAHListenerWithSelfSignedCert

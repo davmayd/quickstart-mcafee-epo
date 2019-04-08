@@ -196,7 +196,7 @@ def remote_command_handler(user_data, request_type):
             response = ssm.get_parameter(Name=parameter_store_identifier+'/EPOAdminPassword', WithDecryption=True)
             epo_password = response['Parameter']['Value']
 
-            epo_hostname = user_data['EPOServerDNSName']
+            epo_hostname = user_data['EPOHostName']
             epo_port = cmd_data['EPOConsolePort']
 
             auth_string = epo_username + ':' + epo_password

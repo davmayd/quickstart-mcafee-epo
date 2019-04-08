@@ -483,13 +483,13 @@ Mappings:
       MFEEPOAGENTHANDLERHVM: McAfee ePO Agent Handler Image
       MFEDXLBROKERHVM: McAfee Data Exchange Layer Image
     us-gov-west-1:
-      MFEDXLBROKERHVM: ami-a41560c5
-      MFEEPOAGENTHANDLERHVM: ami-34106555
-      MFEEPOSERVERHVM: ami-751d6814
+      MFEDXLBROKERHVM: ami-a7ccb8c6
+      MFEEPOAGENTHANDLERHVM: ami-d8c8bcb9
+      MFEEPOSERVERHVM: ami-d7c8bcb6
     us-gov-east-1:
-      MFEEPOSERVERHVM: ami-0fd133194f75924d4
-      MFEEPOAGENTHANDLERHVM: ami-001efd103f6e58454
-      MFEDXLBROKERHVM: ami-02fe5fc36f7fe1551
+      MFEEPOSERVERHVM: ami-0d8b403d7c90f15b8
+      MFEEPOAGENTHANDLERHVM: ami-06a6e7f16ea4961bb
+      MFEDXLBROKERHVM: ami-0851e2923d530e13e
   NodeTierMap:
     '1-10K': {'Tier': '1'}
     '10K-25K': {'Tier': '2'}
@@ -695,7 +695,8 @@ Resources:
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
         ConfirmEPOAdminPassword: !Ref ConfirmEPOAdminPassword
-        EPOServerDNSName: !GetAtt ePO.Outputs.EPOEC2NetworkInterface
+        EPOServerDNSName: !GetAtt ePO.Outputs.EPOServerDNSName
+        EPOServerIp: !GetAtt ePO.Outputs.EPOEC2NetworkInterface
         EPOConsolePort: !Ref EPOConsolePort
         EPODatabaseName: epo-hosted-db
         AHImageId: !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEEPOAGENTHANDLERHVM]
@@ -703,7 +704,7 @@ Resources:
         ClientAccessCIDR: !Ref ClientAccessCIDR
         AHInstanceType: c4.large
         AHInstanceSize: 128
-        AHBuildVersion: 5.10.0.2483
+        AHBuildVersion: 5.10.0.2533
         DBMasterUsername: !Ref DBMasterUsername
         DBInstanceIdentifier: !GetAtt Base.Outputs.SolutionDBInstanceIdentifier
         AdminEmailAddress: !Ref AdminEmailAddress
@@ -738,7 +739,8 @@ Resources:
         EPOAdminUserName: !Ref EPOAdminUserName
         EPOAdminPassword: !Ref EPOAdminPassword
         ConfirmEPOAdminPassword: !Ref ConfirmEPOAdminPassword
-        EPOServerDNSName: !GetAtt ePO.Outputs.EPOEC2NetworkInterface
+        EPOServerDNSName: !GetAtt ePO.Outputs.EPOServerDNSName
+        EPOServerIp: !GetAtt ePO.Outputs.EPOEC2NetworkInterface
         EPOConsolePort: !Ref EPOConsolePort
         DXLImageId: !FindInMap [AWSAMIRegionMap, !Ref 'AWS::Region', MFEDXLBROKERHVM]
         DXLPort: !Ref DXLPort
@@ -882,6 +884,7 @@ Resources:
       EPOELBURL: !GetAtt ePO.Outputs.EPOLoadBalancerURL
       AHELBURL: !GetAtt AH.Outputs.AHLoadBalancerURL
       DXLELBURL: !GetAtt DXL.Outputs.DXLLoadBalancerURL
+      EPOHostName: !GetAtt ePO.Outputs.EPOEC2NetworkInterface
       EPOServerDNSName: !GetAtt ePO.Outputs.EPOServerDNSName
       AHServerDNSName: !GetAtt AH.Outputs.AHServerDNSName
       EPOELBCertificateARN: !Ref EPOELBCertificateARN
