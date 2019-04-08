@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.155 (4/9/2019)
+
+### Bug Fixes:
+
+ - Enabled DNS fallback to support hybrid DNS
+
 ## 1.0.154 (3/21/2019)
 
 ### New Features:

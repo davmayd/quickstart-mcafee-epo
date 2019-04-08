@@ -25,6 +25,7 @@ Metadata:
           - EPOAdminPassword
           - ConfirmEPOAdminPassword
           - EPOServerDNSName
+          - EPOServerIp
           - EPOConsolePort
           - EPODatabaseName
       - Label:
@@ -71,6 +72,8 @@ Metadata:
         default: Confirm Admin Password
       EPOServerDNSName:
         default: EPO Server DNS Name
+      EPOServerIp:
+        default: EPO Server IP Address
       EPOConsolePort:
         default: Console Port
       EPODatabaseName:
@@ -157,6 +160,11 @@ Parameters:
     Description: EPO Server DNS Name
     MinLength: 1
     MaxLength: 256
+    Type: String
+  EPOServerIp:
+    Description: EPO Server IP Address
+    MinLength: 1
+    MaxLength: 64
     Type: String
   EPOConsolePort:
     Default: '8443'
@@ -604,6 +612,12 @@ Resources:
                   triggers=post.update
                   path=Resources.epo.Metadata.AWS::CloudFormation::Init
                   action=cfn-init.exe -v -s ${AWS::StackName} -r AHLaunchConfig --region ${AWS::Region}
+            c:\Windows\System32\drivers\etc\hosts:
+              content: !Join
+                - ' '
+                - - !Sub ${EPOServerIp}
+                  - !Sub ${EPOServerDNSName}
+
           services:
             windows:
               cfn-hup:

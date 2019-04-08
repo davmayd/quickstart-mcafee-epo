@@ -1307,6 +1307,7 @@ Resources:
       ResourceRecords: !GetAtt R53PublicHostedZone.NameServers
 
   # Private Hostedzone for internal communication inside vpc
+  # TODO - This resource will be deleted in next release. keep it for now to allow updates.
   R53PrivateHostedZone:
     Type: AWS::Route53::HostedZone
     Condition: cNotGovCloudCondition

@@ -23,6 +23,7 @@ Metadata:
           - EPOAdminPassword
           - ConfirmEPOAdminPassword
           - EPOServerDNSName
+          - EPOServerIp
           - EPOConsolePort
       - Label:
           default: DXL Stack Configuration
@@ -61,6 +62,8 @@ Metadata:
         default: Confirm Admin Password
       EPOServerDNSName:
         default: EPO Server DNS Name
+      EPOServerIp:
+        default: EPO Server IP Address
       EPOConsolePort:
         default: Console Port
       DXLImageId:
@@ -134,6 +137,11 @@ Parameters:
     Description: EPO Server DNS Name
     MinLength: 1
     MaxLength: 256
+    Type: String
+  EPOServerIp:
+    Description: EPO Server IP Address
+    MinLength: 1
+    MaxLength: 64
     Type: String
   EPOConsolePort:
     Default: '8443'
@@ -533,6 +541,11 @@ Resources:
               mode: '000400'
               owner: root
               group: root
+            /etc/hosts:
+              content: !Join
+                - ' '
+                - - !Sub ${EPOServerIp}
+                  - !Sub ${EPOServerDNSName}
           services:
             sysvinit:
               cfn-hup:
