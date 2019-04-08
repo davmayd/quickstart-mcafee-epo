@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.155 (4/9/2019)
+
+### Bug Fixes:
+
+ - **1266081**: Deployment on an existing VPC using customer domain name and DNS server.
+
 ## 1.0.154 (3/21/2019)
 
 ### New Features:
