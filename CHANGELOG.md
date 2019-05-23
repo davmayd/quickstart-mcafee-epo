@@ -1,10 +1,16 @@
 # Changelog
 
+## 1.0.56 (5/24/19)
+
+### Bug Fixes:
+
+- Update Lambda Nodejs runtime to 8.10
+
 ## 1.0.155 (4/9/2019)
 
 ### Bug Fixes:
 
- - Enabled DNS fallback to support hybrid DNS
+- Enabled DNS fallback to support hybrid DNS
 
 ## 1.0.154 (3/21/2019)
 
