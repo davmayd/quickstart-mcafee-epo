@@ -1,6 +1,28 @@
 # Changelog
 
-## 1.0.56 (5/24/19)
+## 1.0.168 (8/27/2019)
+
+### New Features:
+
+- **McAfee ePolicy Orchestrator 5.10.0 Update 4**
+    * New image (AMI) available for Agent Handler with Update 4  . This update resolves known issues from McAfee ePO 5.10.0 release. Update 4 is cumulative in nature and includes fixes from Update 1.
+    * AH version: 5.10.0.2727 #5
+
+- **McAfee Agent 5.6.1 with integrated McAfee® Data Exchange Layer 5.0.1 (DXL)**
+    * McAfee Agent 5.6.1 bundles the McAfee Data Exchange Layer client 5.0.1 as a component. The Data Exchange Layer client is automatically installed on managed systems and connects to a DXL broker in your environment.
+    * MA Version: 5.6.1.308
+    * DXL Broker: 5.0.1.198
+
+- **Bundled with latest McAfee ePolicy Orchestrator (ePO) Support Center 5.10.0**
+    * Updated to Support Center: 5.10.0.398
+
+### Bug Fixes:
+
+- HEPOAWS-11: Remove Private Hosted Zone record sets and outputs from base template
+
+
+
+## 1.0.156 (5/24/19)
 
 ### Bug Fixes:
 
