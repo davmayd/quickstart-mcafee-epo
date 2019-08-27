@@ -41,7 +41,7 @@
     },
     {
      "ParameterKey": "RemoteAccessCIDR",
-     "ParameterValue": "0.0.0.0/0"
+     "ParameterValue": "161.69.0.0/16"
     },
     {
      "ParameterKey": "EPOAdminUserName",
@@ -65,7 +65,7 @@
     },
     {
      "ParameterKey": "EPOAccessCIDR",
-     "ParameterValue": "0.0.0.0/0"
+     "ParameterValue": "161.69.0.0/16"
     },
     {
      "ParameterKey": "DBMasterUsername",
@@ -97,7 +97,7 @@
     },
     {
      "ParameterKey": "ClientAccessCIDR",
-     "ParameterValue": "0.0.0.0/0"
+     "ParameterValue": "161.69.0.0/16"
     },
     {
      "ParameterKey": "EnableAutoUpdate",

@@ -1306,33 +1306,6 @@ Resources:
       TTL: '900'
       ResourceRecords: !GetAtt R53PublicHostedZone.NameServers
 
-  # Private Hostedzone for internal communication inside vpc
-  # TODO - This resource will be deleted in next release. keep it for now to allow updates.
-  R53PrivateHostedZone:
-    Type: AWS::Route53::HostedZone
-    Condition: cNotGovCloudCondition
-    Properties:
-      HostedZoneConfig:
-        Comment: 'Managed by McAfee Enterprise Security Management'
-      Name: !Sub ${SubDomainName}
-      VPCs:
-        -
-          VPCId: !Ref VPCID
-          VPCRegion: !Ref AWS::Region
-      HostedZoneTags:
-        - Key: Name
-          Value: !Sub R53PrivateHostedZone
-        - Key: Owner
-          Value: !Ref AdminEmailAddress
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Product
-          Value: McAfee-ePO-Base
-        - Key: Solution
-          Value: McAfee-ePO
-        - Key: mcafee:cloudformation:stack-name
-          Value: !Sub ${ParentStack}
-
   ##############################################################################
   # Clean Resources which are attached to Lambda like ENI, etc.
   # This lambda will get ENIs for the given SecurityGroup and look for ENIs which are associated with Lambdas.
@@ -1701,9 +1674,3 @@ Outputs:
     Value: !Ref R53PublicHostedZone
     Export:
       Name: !Sub ${AWS::StackName}-R53PublicHostedZone
-  R53PrivateHostedZone:
-    Condition: cNotGovCloudCondition
-    Description: Amazon Route53 Private HostedZone ID
-    Value: !Ref R53PrivateHostedZone
-    Export:
-      Name: !Sub '${AWS::StackName}-R53PrivateHostedZone'

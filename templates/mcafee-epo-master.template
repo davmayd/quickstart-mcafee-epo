@@ -571,28 +571,28 @@ Mappings:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-west-2:
-      MFEBASTIONHVM: ami-01fe55a3c59a5d3a7
+      MFEBASTIONHVM: ami-0f98479d1b48caffa
 
-    eu-west-3:
-      MFEBASTIONHVM: ami-026c0b8c81ef8720b
-    us-west-1:
-      MFEBASTIONHVM: ami-0d55c7eea56bf7e55
-    ca-central-1:
-      MFEBASTIONHVM: ami-0307a7c5fca9e7d3b
-    eu-west-2:
-      MFEBASTIONHVM: ami-02d393f30580234e4
-    ap-southeast-2:
-      MFEBASTIONHVM: ami-0820b4a0ab4aca065
-    us-east-1:
-      MFEBASTIONHVM: ami-0cc99ff0789a8cda0
-    us-east-2:
-      MFEBASTIONHVM: ami-0a4f5de24897ff09b
-    ap-southeast-1:
-      MFEBASTIONHVM: ami-0b387e363cb8c2bb5
-    ap-northeast-1:
-      MFEBASTIONHVM: ami-0df3720c4b37e1072
     eu-central-1:
-      MFEBASTIONHVM: ami-07209487cbe3b46ee
+      MFEBASTIONHVM: ami-0501226a9a723a1b1
+    ca-central-1:
+      MFEBASTIONHVM: ami-0f59fdbea0f29f6e2
+    ap-southeast-2:
+      MFEBASTIONHVM: ami-074b581119261051a
+    eu-west-2:
+      MFEBASTIONHVM: ami-09d7276987a8a6555
+    ap-northeast-1:
+      MFEBASTIONHVM: ami-0e8e34ef11e958e30
+    us-west-1:
+      MFEBASTIONHVM: ami-0afbdc145e002d79d
+    us-east-2:
+      MFEBASTIONHVM: ami-0ad90bb0f2c12d9af
+    us-east-1:
+      MFEBASTIONHVM: ami-0f5e019d5ee1f358a
+    eu-west-3:
+      MFEBASTIONHVM: ami-0dbbc579d116cb04a
+    ap-southeast-1:
+      MFEBASTIONHVM: ami-0c55c5763b1f4721c
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
