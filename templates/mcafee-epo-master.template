@@ -149,7 +149,7 @@ Metadata:
       ApproverEmailAddress:
         default: Approver Email
       AdminEmailAddress:
-        default: Operator Email
+        default: Admin Email
       AutoCleanup:
         default: Auto Cleanup
       QSS3BucketName:
@@ -481,7 +481,7 @@ Parameters:
     ConstraintDescription: Must be a valid email address.
     Default: ''
     Description: Approver Email address where approval will be sent in case of auto
-      updates if AutoAproval is not selected.
+      updates if AutoApproval is not selected.
     Type: String
   AdminEmailAddress:
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)

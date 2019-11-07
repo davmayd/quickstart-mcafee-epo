@@ -16,20 +16,12 @@
      "ParameterValue": "mcafee.local"
     },
     {
-     "ParameterKey": "Availability",
-     "ParameterValue": "Yes"
-    },
-    {
      "ParameterKey": "KeyPairName",
      "ParameterValue": "$[alfred_getkeypair]"
     },
     {
      "ParameterKey": "AvailabilityZones",
      "ParameterValue": "$[taskcat_genaz_2]"
-    },
-    {
-     "ParameterKey": "VPCCIDR",
-     "ParameterValue": "10.0.0.0/16"
     },
     {
      "ParameterKey": "RemoteAccessCIDR",
@@ -48,14 +40,6 @@
      "ParameterValue": "Password1Password1"
     },
     {
-     "ParameterKey": "EPOConsolePort",
-     "ParameterValue": "8443"
-    },
-    {
-     "ParameterKey": "EPOELBCertificateARN",
-     "ParameterValue": ""
-    },
-    {
      "ParameterKey": "EPOAccessCIDR",
      "ParameterValue": "161.69.0.0/16"
     },
@@ -68,36 +52,12 @@
      "ParameterValue": "Password1"
     },
     {
-     "ParameterKey": "DBPort",
-     "ParameterValue": "1433"
-    },
-    {
-     "ParameterKey": "DBAllocatedStorage",
-     "ParameterValue": "200"
-    },
-    {
      "ParameterKey": "DBInstanceIdentifier",
      "ParameterValue": ""
     },
     {
-     "ParameterKey": "DXLPort",
-     "ParameterValue": "80"
-    },
-    {
-     "ParameterKey": "AHPort",
-     "ParameterValue": "443"
-    },
-    {
      "ParameterKey": "ClientAccessCIDR",
      "ParameterValue": "161.69.0.0/16"
-    },
-    {
-     "ParameterKey": "EnableAutoUpdate",
-     "ParameterValue": "Yes"
-    },
-    {
-     "ParameterKey": "AutoApproval",
-     "ParameterValue": "Update after Approval"
     },
     {
      "ParameterKey": "AdminEmailAddress",
