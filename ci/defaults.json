@@ -13,7 +13,7 @@
     },
     {
      "ParameterKey": "SubDomainName",
-     "ParameterValue": "mcafee.local"
+     "ParameterValue": "mcafee.test.com"
     },
     {
      "ParameterKey": "KeyPairName",
@@ -33,11 +33,11 @@
     },
     {
      "ParameterKey": "EPOAdminPassword",
-     "ParameterValue": "Password1"
+     "ParameterValue": "Password1Password1!"
     },
     {
      "ParameterKey": "EPOPassphraseDR",
-     "ParameterValue": "Password1Password1"
+     "ParameterValue": "Password1Password1!"
     },
     {
      "ParameterKey": "EPOAccessCIDR",
@@ -49,7 +49,7 @@
     },
     {
      "ParameterKey": "DBMasterUserPassword",
-     "ParameterValue": "Password1"
+     "ParameterValue": "Password1Password1!"
     },
     {
      "ParameterKey": "DBInstanceIdentifier",
@@ -80,15 +80,19 @@
      "ParameterValue": "quickstart-mcafee-epo/"
     },
     {
+      "ParameterKey": "TelemetryOption",
+      "ParameterValue": "No"
+    },
+    {
      "ParameterKey": "ConfirmDBMasterUserPassword",
-     "ParameterValue": "Password1"
+     "ParameterValue": "Password1Password1!"
     },
     {
      "ParameterKey": "ConfirmEPOAdminPassword",
-     "ParameterValue": "Password1"
+     "ParameterValue": "Password1Password1!"
     },
     {
      "ParameterKey": "ConfirmEPOPassphraseDR",
-     "ParameterValue": "Password1Password1"
+     "ParameterValue": "Password1Password1!"
     }
   ]
