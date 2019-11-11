@@ -13,7 +13,7 @@
   },
   {
    "ParameterKey": "SubDomainName",
-   "ParameterValue": "mcafee.test-ca-central-1.com"
+   "ParameterValue": "test-ca-central-1.mcafee.com"
   },
   {
    "ParameterKey": "KeyPairName",

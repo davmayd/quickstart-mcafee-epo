@@ -13,7 +13,7 @@
   },
   {
    "ParameterKey": "SubDomainName",
-   "ParameterValue": "mcafee.test-ap-northeast-1.com"
+   "ParameterValue": "test-ap-northeast-1.mcafee.com"
   },
   {
    "ParameterKey": "KeyPairName",

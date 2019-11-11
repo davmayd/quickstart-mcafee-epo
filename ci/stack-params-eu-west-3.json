@@ -13,7 +13,7 @@
   },
   {
    "ParameterKey": "SubDomainName",
-   "ParameterValue": "mcafee.test-eu-west-3.com"
+   "ParameterValue": "test-eu-west-3.mcafee.com"
   },
   {
    "ParameterKey": "KeyPairName",

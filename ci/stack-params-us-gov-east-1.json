@@ -13,7 +13,7 @@
   },
   {
    "ParameterKey": "SubDomainName",
-   "ParameterValue": "mcafee.test-us-gov-east-1.com"
+   "ParameterValue": "test-us-gov-east-1.mcafee.com"
   },
   {
    "ParameterKey": "KeyPairName",
