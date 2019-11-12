@@ -65,4 +65,4 @@ tests:
     regions:
       - us-east-1
     template_file: mcafee-epo-master.template
-    parameter_input: stack-params-us-east-1-1.json
+    parameter_input: stack-params-us-east-1.json
