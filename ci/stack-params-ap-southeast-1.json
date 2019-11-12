@@ -8,12 +8,16 @@
    "ParameterValue": "Production"
   },
   {
+   "ParameterKey": "Availability",
+   "ParameterValue": "No"
+  },
+  {
    "ParameterKey": "DomainName",
    "ParameterValue": ""
   },
   {
    "ParameterKey": "SubDomainName",
-   "ParameterValue": "test-ap-southeast-1.mcafee.com"
+   "ParameterValue": "x$[taskcat_random-numbers].example.com"
   },
   {
    "ParameterKey": "KeyPairName",

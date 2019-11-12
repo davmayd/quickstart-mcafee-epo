@@ -12,8 +12,12 @@
    "ParameterValue": ""
   },
   {
+   "ParameterKey": "Availability",
+   "ParameterValue": "No"
+  },
+  {
    "ParameterKey": "SubDomainName",
-   "ParameterValue": "test-ca-central-1.mcafee.com"
+   "ParameterValue": "x$[taskcat_random-numbers].example.com"
   },
   {
    "ParameterKey": "KeyPairName",
