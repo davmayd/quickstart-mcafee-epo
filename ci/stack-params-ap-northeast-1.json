@@ -17,7 +17,7 @@
   },
   {
    "ParameterKey": "SubDomainName",
-   "ParameterValue": "x$[taskcat_random-numbers].example.com"
+   "ParameterValue": "$[taskcat_random-string].mcafee.com"
   },
   {
    "ParameterKey": "KeyPairName",
