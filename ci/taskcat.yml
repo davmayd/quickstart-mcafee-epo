@@ -36,33 +36,33 @@ tests:
       - ca-central-1
     template_file: mcafee-epo-master.template
     parameter_input: stack-params-ca-central-1.json
-#  mcafee-epo-eu-central-1:
-#    regions:
-#      - eu-central-1
-#    template_file: mcafee-epo-master.template
-#    parameter_input: stack-params-eu-central-1.json
+  mcafee-epo-eu-central-1:
+    regions:
+      - eu-central-1
+    template_file: mcafee-epo-master.template
+    parameter_input: stack-params-eu-central-1.json
   mcafee-epo-eu-west-2:
     regions:
       - eu-west-2
     template_file: mcafee-epo-master.template
     parameter_input: stack-params-eu-west-2.json
-#  mcafee-epo-ap-southeast-1:
-#    regions:
-#      - ap-southeast-1
-#    template_file: mcafee-epo-master.template
-#    parameter_input: stack-params-ap-southeast-1.json
-#  mcafee-epo-ap-southeast-2:
-#    regions:
-#      - ap-southeast-2
-#    template_file: mcafee-epo-master.template
-#    parameter_input: stack-params-ap-southeast-2.json
-#  mcafee-epo-ap-northeast-1:
-#    regions:
-#      - ap-northeast-1
-#    template_file: mcafee-epo-master.template
-#    parameter_input: stack-params-ap-northeast-1.json
-#  mcafee-epo-us-east-1:
-#    regions:
-#      - us-east-1
-#    template_file: mcafee-epo-master.template
-#    parameter_input: stack-params-us-east-1.json
+  mcafee-epo-ap-southeast-1:
+    regions:
+      - ap-southeast-1
+    template_file: mcafee-epo-master.template
+    parameter_input: stack-params-ap-southeast-1.json
+  mcafee-epo-ap-southeast-2:
+    regions:
+      - ap-southeast-2
+    template_file: mcafee-epo-master.template
+    parameter_input: stack-params-ap-southeast-2.json
+  mcafee-epo-ap-northeast-1:
+    regions:
+      - ap-northeast-1
+    template_file: mcafee-epo-master.template
+    parameter_input: stack-params-ap-northeast-1.json
+  mcafee-epo-us-east-1:
+    regions:
+      - us-east-1
+    template_file: mcafee-epo-master.template
+    parameter_input: stack-params-us-east-1.json
