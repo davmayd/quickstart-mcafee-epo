@@ -973,7 +973,7 @@ Resources:
           AGGREGATOR_ALAM_NAME: !Sub ${AWS::StackName}-AggregatorAlarm
       Handler: metric-aggregator.handler
       Role: !GetAtt AHMetricAggregatorLambdaRole.Arn
-      Runtime: nodejs8.10
+      Runtime: nodejs10.x
       Timeout: 120
       Tags:
         - Key: Name
