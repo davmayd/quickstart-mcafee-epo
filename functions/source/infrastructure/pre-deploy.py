@@ -9,9 +9,15 @@ import urllib
 import json
 import uuid
 import copy
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
-ssm = boto3.client('ssm')
+config = Config(
+    retries={
+        'max_attempts': 18
+    }
+)
+ssm = boto3.client('ssm', config=config)
 
 def validate_user_data_for_parameter_store(user_data):
     if 'ParameterStoreIdentifier' not in user_data:
@@ -115,7 +121,7 @@ def setup_parameter_store_handler(user_data, request_type):
 
 # Some parameters should not be updated in to SSM Parameter Store when request_type is update
 def exclude_parameters(stack_parameters, user_parameters):
-    exclude_params = ['PipelineExecutionVersion', 'EPOAdminUserName', 'EPOAdminPassword', 'ConfirmEPOAdminPassword', 'EPOPassphraseDR' ,'ConfirmEPOPassphraseDR' , 'EPODatabaseName', 'DBMasterUserPassword', 'ConfirmDBMasterUserPassword']
+    exclude_params = ['PipelineExecutionVersion', 'EPOAdminUserName', 'EPOAdminPassword', 'ConfirmEPOAdminPassword', 'EPOPassphraseDR' ,'ConfirmEPOPassphraseDR' , 'EPODatabaseName', 'DBMasterUserPassword', 'ConfirmDBMasterUserPassword', 'DBEncrypted', 'DBEncryptionKmsKeyARN']
     user_parameters_copy = copy.deepcopy(user_parameters)
     stack_parameters_copy = copy.deepcopy(stack_parameters)
     for param in exclude_params:

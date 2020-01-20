@@ -51,6 +51,8 @@ Metadata:
       - DBAllocatedStorage
       - DBBackupRetentionPeriod
       - DBInstanceIdentifier
+      - DBEncrypted
+      - DBEncryptionKmsKeyARN
     - Label:
         default: Client Communication Configuration
       Parameters:
@@ -131,6 +133,10 @@ Metadata:
         default: DB Backup Retention Period
       DBInstanceIdentifier:
         default: DB Instance Identifier
+      DBEncrypted:
+        default: DB Encrypted
+      DBEncryptionKmsKeyARN:
+        default: DB Encryption Kms Key Id ARN
       AHPort:
         default: Agent Handler Port
       DXLPort:
@@ -373,6 +379,23 @@ Parameters:
     Description: Specify your existing database instance identifier. Leave it blank
       to create new database instance.
     Type: String
+  DBEncrypted:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'No'
+    Description: Recommended, Enables RDS DB encryption.
+    Type: String
+  DBEncryptionKmsKeyARN:
+    AllowedPattern: ^$|((arn:aws:)|(arn:aws-us-gov:))([a-z])([a-z0-9/:-])*([a-z0-9])$
+    Default: ''
+    Description: >-
+      [ Optional ] ARN of the RDS DB Instance.
+      Default KMS Key will be used if user selects DB encryption.
+      KMS Key will be associatded to RDS DB encryption e.g., arn:aws:*:us-west-1:*:key/*
+      or arn:aws-us-gov:*:us-west-1:*:key/* .
+    MaxLength: 256
+    Type: String
   AHPort:
     Default: '443'
     Description: The agent server communication(ASC) port used by the McAfee Agent
@@ -475,6 +498,16 @@ Rules:
       - !Ref DBMasterUserPassword
       - !Ref ConfirmDBMasterUserPassword
       AssertDescription: DB Master Passwords do not match.
+  ValidateDBEncryptParams:
+    RuleCondition: !Equals
+    - !Ref DBEncrypted
+    - 'No'
+    Assertions:
+    - Assert: !Equals
+      - !Ref DBEncryptionKmsKeyARN
+      - ''
+      AssertDescription: DB Encryption Kms Key ARN should be empty if DB encrypted
+        parameter is No
 
 Mappings:
   AWSAMIRegionMap:
@@ -483,13 +516,13 @@ Mappings:
       MFEEPOAGENTHANDLERHVM: McAfee ePO Agent Handler Image
       MFEDXLBROKERHVM: McAfee Data Exchange Layer Image
     us-gov-west-1:
-      MFEDXLBROKERHVM: ami-f50f4094
-      MFEEPOAGENTHANDLERHVM: ami-000f4061
-      MFEEPOSERVERHVM: ami-ad0f40cc
+      MFEDXLBROKERHVM: ami-863312e7
+      MFEEPOAGENTHANDLERHVM: ami-c81637a9
+      MFEEPOSERVERHVM: ami-69183908
     us-gov-east-1:
-      MFEDXLBROKERHVM: ami-0f762338a2fa85033
-      MFEEPOSERVERHVM: ami-0fcf1d53fe0bf19e6
-      MFEEPOAGENTHANDLERHVM: ami-052b37393ab9c4a31
+      MFEDXLBROKERHVM: ami-000942c980157bd5f
+      MFEEPOAGENTHANDLERHVM: ami-07d84aa83a2d9a139
+      MFEEPOSERVERHVM: ami-07ec230326fad6a6e
   NodeTierMap:
     '1-10K': {'Tier': '1'}
     '10K-25K': {'Tier': '2'}
@@ -613,6 +646,8 @@ Resources:
         - ''
         - - !GetAtt [CheckStackDetailsActionV1, ParentStack]
           - !Sub '-rds'
+        DBEncrypted: !Ref DBEncrypted
+        DBEncryptionKmsKeyARN: !Ref DBEncryptionKmsKeyARN
         AdminEmailAddress: !Ref AdminEmailAddress
       Tags:
       - Key: Name
@@ -704,7 +739,7 @@ Resources:
         ClientAccessCIDR: !Ref ClientAccessCIDR
         AHInstanceType: c4.large
         AHInstanceSize: 128
-        AHBuildVersion: 5.10.0.2533
+        AHBuildVersion: 5.10.0.2968
         DBMasterUsername: !Ref DBMasterUsername
         DBInstanceIdentifier: !GetAtt Base.Outputs.SolutionDBInstanceIdentifier
         AdminEmailAddress: !Ref AdminEmailAddress
@@ -747,7 +782,7 @@ Resources:
         ClientAccessCIDR: !Ref ClientAccessCIDR
         DXLInstanceType: c4.large
         DXLInstanceSize: 64
-        DXLBuildVersion: 5.0.0.546
+        DXLBuildVersion: 5.0.2.130
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
@@ -856,7 +891,9 @@ Resources:
           "RegionQSS3BucketName": {"Type": "String","Value": "${RegionQSS3BucketName}", "Description": "Region QS S3 bucket."},
           "QSS3BucketName": {"Type": "String","Value": "${QSS3BucketName}", "Description": "QS S3 bucekt."},
           "ArtifactsVersionId": {"Type": "String","Value": "0", "Description": "QS S3 Artifacts zip version ID."},
-          "PipelineExecutionVersion": {"Type": "String","Value": "0", "Description": "Pipeline Execution Version."}
+          "PipelineExecutionVersion": {"Type": "String","Value": "0", "Description": "Pipeline Execution Version."},
+          "DBEncrypted": {"Type": "String","Value": "${DBEncrypted}", "Description": "DB encrypted."},
+          "DBEncryptionKmsKeyARN": {"Type": "String","Value": "${DBEncryptionKmsKeyARN}", "Description": "DB Encryption Kms Key Id ARN."}
         }
       - RegionQSS3BucketName: !GetAtt Base.Outputs.SourceStore
 

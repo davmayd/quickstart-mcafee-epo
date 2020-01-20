@@ -52,6 +52,8 @@ Metadata:
       - DBAllocatedStorage
       - DBBackupRetentionPeriod
       - DBInstanceIdentifier
+      - DBEncrypted
+      - DBEncryptionKmsKeyARN
     - Label:
         default: Client Communication Configuration
       Parameters:
@@ -132,6 +134,10 @@ Metadata:
         default: DB Backup Retention Period
       DBInstanceIdentifier:
         default: DB Instance Identifier
+      DBEncrypted:
+        default: DB Encrypted
+      DBEncryptionKmsKeyARN:
+        default: DB Encryption Kms Key Id ARN
       AHPort:
         default: Agent Handler Port
       DXLPort:
@@ -403,6 +409,23 @@ Parameters:
     Description: Specify your existing database instance identifier. Leave it blank
       to create new database instance.
     Type: String
+  DBEncrypted:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'No'
+    Description: Recommended, Enables RDS DB encryption.
+    Type: String
+  DBEncryptionKmsKeyARN:
+    AllowedPattern: ^$|((arn:aws:)|(arn:aws-us-gov:))([a-z])([a-z0-9/:-])*([a-z0-9])$
+    Default: ''
+    Description: >-
+      [ Optional ] ARN of the RDS DB Instance.
+      Default KMS Key will be used if user selects DB encryption.
+      KMS Key will be associatded to RDS DB encryption e.g., arn:aws:*:us-west-1:*:key/*
+      or arn:aws-us-gov:*:us-west-1:*:key/* .
+    MaxLength: 256
+    Type: String
   AHPort:
     Default: '443'
     Description: The agent server communication(ASC) port used by the McAfee Agent
@@ -496,16 +519,26 @@ Rules:
       - !Ref DBMasterUserPassword
       - !Ref ConfirmDBMasterUserPassword
       AssertDescription: DB Master Passwords do not match.
+  ValidateDBEncryptParams:
+    RuleCondition: !Equals
+    - !Ref DBEncrypted
+    - 'No'
+    Assertions:
+    - Assert: !Equals
+      - !Ref DBEncryptionKmsKeyARN
+      - ''
+      AssertDescription: DB Encryption Kms Key ARN should be empty if DB encrypted
+        parameter is No
 
 Mappings:
   AWSAMIRegionMap:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-gov-west-1:
-      MFEBASTIONHVM: ami-a8f2bec9
+      MFEBASTIONHVM: ami-b83312d9
 
     us-gov-east-1:
-      MFEBASTIONHVM: ami-02cb4322c10cfb30a
+      MFEBASTIONHVM: ami-0f47a72657789812a
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
@@ -607,6 +640,8 @@ Resources:
         DBAllocatedStorage: !Ref DBAllocatedStorage
         DBBackupRetentionPeriod: !Ref DBBackupRetentionPeriod
         DBInstanceIdentifier: !Ref DBInstanceIdentifier
+        DBEncrypted: !Ref DBEncrypted
+        DBEncryptionKmsKeyARN: !Ref DBEncryptionKmsKeyARN
         AHPort: !Ref AHPort
         DXLPort: !Ref DXLPort
         ClientAccessCIDR: !Ref ClientAccessCIDR

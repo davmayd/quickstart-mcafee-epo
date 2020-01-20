@@ -32,6 +32,8 @@
     "DBBackupRetentionPeriod": "",
     "DBAllocatedStorage": "",
     "DBInstanceIdentifier": "",
+    "DBEncrypted": "No",
+    "DBEncryptionKmsKeyARN": "",
     "AHPort": "",
     "DXLPort": "",
     "ClientAccessCIDR": "",

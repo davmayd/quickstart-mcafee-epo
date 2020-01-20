@@ -15,7 +15,7 @@ import json
 import uuid
 from botocore.client import Config
 
-config_files = ["assets/pipeline/config/master-config.json", "assets/pipeline/config/config.json", "assets/pipeline/config/pipeline-config.json"]
+config_files = ["assets/pipeline/config/master-config.json", "assets/pipeline/config/config.json", "assets/pipeline/config/private-config.json", "assets/pipeline/config/pipeline-config.json"]
 
 config_data = [None]*len(config_files)
 
@@ -144,7 +144,7 @@ def handle_stage_transitition(job_data):
     try:
         version = 0
         pipeline_execution_version = get_parameter_from_parameter_store(pipeline_execution_parameter)
-        
+
         # this is the first time pipeline is created, so its already in sync
         #just disable the stage transition to continue, update the parameter
         if "0" == pipeline_execution_version:

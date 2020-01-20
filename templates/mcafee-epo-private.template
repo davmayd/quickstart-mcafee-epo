@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: McAfee-ePO Workload stack which deploys McAfee ePO Platform components
-  on AWS (Existing VPC) (qs-1oknn9kai)
+  in Private Network on AWS (Existing VPC) (qs-1oknn9kai)
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -11,16 +11,12 @@ Metadata:
       - VPCID
       - PrivateSubnet1ID
       - PrivateSubnet2ID
-      - PublicSubnet1ID
-      - PublicSubnet2ID
-      - BastionSecurityGroupID
+      - WebProxy
     - Label:
         default: McAfee ePolicy Orchestrator Platform Configuration
       Parameters:
       - ProtectedInstances
       - Environment
-      - DomainName
-      - SubDomainName
       - Availability
       - KeyPairName
     - Label:
@@ -77,10 +73,6 @@ Metadata:
         default: Number of Endpoints
       Environment:
         default: Deployment Environment
-      DomainName:
-        default: Domain Name
-      SubDomainName:
-        default: Sub Domain Name
       Availability:
         default: High Availability
       KeyPairName:
@@ -89,16 +81,12 @@ Metadata:
         default: Availability Zones
       VPCID:
         default: VPC ID
-      PublicSubnet1ID:
-        default: Public Subnet 1 ID
-      PublicSubnet2ID:
-        default: Public Subnet 2 ID
       PrivateSubnet1ID:
         default: Private Subnet 1 ID
       PrivateSubnet2ID:
         default: Private Subnet 2 ID
-      BastionSecurityGroupID:
-        default: Bastion Security Group ID
+      WebProxy:
+        default: Web Proxy
       OnPremiseDomainName:
         default: On Premises Domain Name
       OnPremiseServerDNS:
@@ -181,27 +169,6 @@ Parameters:
     Default: 'Production'
     Description: What is the targeted deployment environment?
     Type: String
-  DomainName:
-    AllowedPattern: ^$|^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
-    Description: >-
-      [Optional] Amazon Route 53 registered domain name (e.g. mcafee.com).
-      We recommend either to register Amazon Route 53 domain name so that public DNS
-      records can be propagated automatically
-      OR add the sub domain Name Server(NS) records into your main domain server.
-      If this domain is not managed by Amazon Route 53, then leave this field blank.
-    Default: ''
-    Type: String
-  SubDomainName:
-    AllowedPattern: ^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
-    Description: >-
-      The non-existent fully-qualified domain name to be used for managment solution.
-      (e.g. manage.mcafee.com
-      ). We recommend either to register AWS Route 53
-      domain name so that public DNS records can be propagated automatically OR add
-      the sub domain Name Server(NS) records into your main domain server.
-    MinLength: 1
-    MaxLength: 256
-    Type: String
   Availability:
     AllowedValues:
     - 'Yes'
@@ -222,14 +189,6 @@ Parameters:
   VPCID:
     Description: ID of your existing VPC for deployment(e.g., vpc-fd990584)
     Type: AWS::EC2::VPC::Id
-  PublicSubnet1ID:
-    Description: ID of public subnet 1 in Availability Zone 1 for the ELB load balancer
-      (e.g., subnet-9bc642ac)
-    Type: AWS::EC2::Subnet::Id
-  PublicSubnet2ID:
-    Description: ID of public subnet 2 in Availability Zone 2 for the ELB load balancer
-      (e.g., subnet-e3246d8e)
-    Type: AWS::EC2::Subnet::Id
   PrivateSubnet1ID:
     Description: ID of private subnet 1 in Availability Zone 1 for the McAfee application
       components (e.g., subnet-a0246dcd)
@@ -238,10 +197,11 @@ Parameters:
     Description: ID of private subnet 2 in Availability Zone 2 for the McAfee application
       components (e.g., subnet-b1f432cd)
     Type: AWS::EC2::Subnet::Id
-  BastionSecurityGroupID:
-    Description: ID of the bastion host security group to enable SSH connections (e.g.,
-      sg-7f16e910)
-    Type: AWS::EC2::SecurityGroup::Id
+  WebProxy:
+    Description: >-
+      [Optional] Web Proxy URL which can be used by instances for outbound traffic.
+    Default: ''
+    Type: String
   OnPremiseDomainName:
     AllowedPattern: ^$|^(?!.{256})([a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]\.){1,}([a-zA-Z]{2,8})$
     Description: >-
@@ -737,16 +697,13 @@ Resources:
     Properties:
       Parameters:
         Environment: !Ref Environment
-        DomainName: !Ref DomainName
+        DomainName: ''
         HostedZoneID: !GetAtt [CheckStackDetailsActionV1, HostedZoneId]
-        SubDomainName: !Ref SubDomainName
+        SubDomainName: ''
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
         VPCID: !Ref VPCID
-        PublicSubnet1ID: !Ref PublicSubnet1ID
-        PublicSubnet2ID: !Ref PublicSubnet2ID
         PrivateSubnet1ID: !Ref PrivateSubnet1ID
         PrivateSubnet2ID: !Ref PrivateSubnet2ID
-        BastionSecurityGroupID: !Ref BastionSecurityGroupID
         DBInstanceIdentifier: !Ref DBInstanceIdentifier
         AdminEmailAddress: !Ref AdminEmailAddress
         AutoCleanup: !Ref AutoCleanup
@@ -829,7 +786,8 @@ Resources:
     Properties:
       Parameters:
         Environment: !Ref Environment
-        SubDomainName: !Ref SubDomainName
+        PublicNetwork: 'No'
+        WebProxy: !Ref WebProxy
         KeyPairName: !Ref KeyPairName
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
         BaseStack: !Select [1, !Split ["/", !Ref Base]]
@@ -882,7 +840,8 @@ Resources:
     Properties:
       Parameters:
         Environment: !Ref Environment
-        SubDomainName: !Ref SubDomainName
+        PublicNetwork: 'No'
+        WebProxy: !Ref WebProxy
         Availability: !Ref Availability
         KeyPairName: !Ref KeyPairName
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
@@ -928,6 +887,8 @@ Resources:
       Parameters:
         Environment: !Ref Environment
         Availability: !Ref Availability
+        PublicNetwork: 'No'
+        WebProxy: !Ref WebProxy
         KeyPairName: !Ref KeyPairName
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
         BaseStack: !Select [1, !Split ["/", !Ref Base]]
@@ -972,8 +933,8 @@ Resources:
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
         BaseStack: !Select [1, !Split ["/", !Ref Base]]
         PipelineMasterStackName: !Sub ${AWS::StackName}
-        PipelineMasterStackTemplateName: 'mcafee-epo.template'
-        PipelineMasterStackTemplateConfigName: 'config.json'
+        PipelineMasterStackTemplateName: 'mcafee-epo-private.template'
+        PipelineMasterStackTemplateConfigName: 'private-config.json'
         PipelineCloudformationIAMRoleARN: !GetAtt WorkloadCloudformationRole.Arn
         AutoApproval: !Ref AutoApproval
         AdminEmailAddress: !Ref AdminEmailAddress
@@ -1003,13 +964,13 @@ Resources:
     Properties:
       Parameters:
         Environment: !Ref Environment
+        PublicNetwork: 'No'
         ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
         EPOConsoleURL: !GetAtt ePO.Outputs.ePOConsoleLBURL
         EPOELBName: !GetAtt ePO.Outputs.ePOLoadbalancerName
         EPOSystemCheckAlarmARN: !GetAtt ePO.Outputs.EPOEC2SystemStatusCheckARN
         EPOStatusCheckAlarmARN: !GetAtt ePO.Outputs.EPOEC2InstanceStatusCheckARN
         EPOInstanceID: !GetAtt ePO.Outputs.EPOEC2Instance
-        HostedZoneID: !GetAtt Base.Outputs.R53PublicHostedZone
         ParentStackID: !GetAtt [CheckStackDetailsActionV1, ParentStackID]
         DatastoreBucketName: !GetAtt Base.Outputs.DataStore
         AvailabilityZones: !Join
@@ -1055,14 +1016,14 @@ Resources:
       - - '/mcafee/'
         - !GetAtt [CheckStackDetailsActionV1, ParentStack]
       ParentStack: !GetAtt [CheckStackDetailsActionV1, ParentStack]
-      PipelineMasterStackTemplateName: 'mcafee-epo.template'
-      PipelineMasterStackTemplateConfigName: 'config.json'
+      PipelineMasterStackTemplateName: 'mcafee-epo-private.template'
+      PipelineMasterStackTemplateConfigName: 'private-config.json'
       PipelineCloudformationIAMRoleARN: !GetAtt WorkloadCloudformationRole.Arn
       BaseStack: !Select [1, !Split ["/", !Ref Base]]
       # This is to make sure it triggers the action when any parameters change
       PropertiesSub: !Sub >
         {
-          ${ProtectedInstances}${Environment}${DomainName}${SubDomainName}${Availability}${KeyPairName}${VPCID}${PublicSubnet1ID}${PublicSubnet2ID}${PrivateSubnet1ID}${PrivateSubnet2ID}${BastionSecurityGroupID}${EPOLicenseKey}${EPOAdminUserName}${EPOAdminPassword}${EPOPassphraseDR}
+          ${ProtectedInstances}${Environment}${Availability}${KeyPairName}${VPCID}${PrivateSubnet1ID}${PrivateSubnet2ID}${EPOLicenseKey}${EPOAdminUserName}${EPOAdminPassword}${EPOPassphraseDR}
           ${EPOConsolePort}${TelemetryOption}${EPOELBCertificateARN}${EPOAccessCIDR}${DBMasterUsername}${DBMasterUserPassword}${DBPort}${DBAllocatedStorage}${DBBackupRetentionPeriod}${DBInstanceIdentifier}${AHPort}${DXLPort}${ClientAccessCIDR}${EnableAutoUpdate}${AutoApproval}${AdminEmailAddress}${ApproverEmailAddress}
           ${AutoCleanup}${QSS3BucketName}${QSS3KeyPrefix}
         }
@@ -1140,7 +1101,6 @@ Resources:
       - |
         {
           "ParentStackName": "${ParentStack}",
-          "DomainName": "${DomainName}",
           "EPOConsolePort": "${EPOConsolePort}",
           "TelemetryOption": "${TelemetryOption}",
           "DXLPort": "${DXLPort}"
@@ -1189,8 +1149,8 @@ Resources:
     Type: Custom::CheckStackDetailsAction
     Properties:
       ServiceToken: !GetAtt Utils.Outputs.CheckStackDetailsLambdaArn
-      DomainName: !Ref DomainName
-      SubDomainName: !Ref SubDomainName
+      DomainName: ''
+      SubDomainName: ''
       StackName: !Sub ${AWS::StackName}
 
   # Workload Cloudformation IAM Role for AWS CodePipeline
@@ -1247,9 +1207,6 @@ Resources:
             Resource: '*'
 
 Outputs:
-  ePOConsoleURL:
-    Description: McAfee ePO console URL via sub domain name
-    Value: !GetAtt ePO.Outputs.ePOConsoleURL
   ePOConsoleLBURL:
     Description: ePO Console URL via AWS Elastic Load Balancer
     Value: !GetAtt ePO.Outputs.ePOConsoleLBURL
