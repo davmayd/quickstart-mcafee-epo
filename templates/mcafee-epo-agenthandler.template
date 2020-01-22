@@ -12,6 +12,8 @@ Metadata:
           - Environment
           - SubDomainName
           - Availability
+          - PublicNetwork
+          - WebProxy
           - KeyPairName
       - Label:
           default: Peer-Parent Stack Configuration
@@ -58,6 +60,10 @@ Metadata:
         default: Sub Domain Name
       Availability:
         default: High Availability
+      PublicNetwork:
+        default: Public Network Allowed
+      WebProxy:
+        default: Web Proxy
       KeyPairName:
         default: AWS Key Pair Name
       ParentStack:
@@ -121,6 +127,18 @@ Parameters:
       - 'No'
     Default: 'Yes'
     Description: We recommend selecting 'Yes' for production environments. It is applicable for Agent Handlers, DXL Brokers, RDS.
+    Type: String
+  PublicNetwork:
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'Yes'
+    Description: Select 'Yes' if public access allowed.
+    Type: String
+  WebProxy:
+    Description: >-
+      [Optional] Web Proxy URL which can be used by instances for outbound traffic.
+    Default: ''
     Type: String
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.
@@ -291,7 +309,12 @@ Conditions:
   cGovCloudCondition: !Or
     - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
     - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
-  cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
+  cPrivateNetwork: !Equals [!Ref PublicNetwork, 'No']
+  cPublicNetwork: !Equals [!Ref PublicNetwork, 'Yes']
+  cCreateR53Resources: !And
+    - !Not [ !Condition cGovCloudCondition ]
+    - !Not [ !Condition cPrivateNetwork ]
+  cWithProxy: !Not [ !Equals [ !Ref 'WebProxy', '' ] ]
 
 Rules:
   MatchPassword:
@@ -342,6 +365,7 @@ Resources:
   # AH Instance  internal security group
   AHInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    Condition: cPublicNetwork
     Properties:
       GroupDescription: Security group for AH Instance.
       SecurityGroupEgress:
@@ -354,16 +378,6 @@ Resources:
           FromPort: !Ref AHPort
           ToPort: !Ref AHPort
           CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: !Ref AHPort
-          ToPort: !Ref AHPort
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: !Ref AHPort
-          ToPort: !Ref AHPort
-          CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
           FromPort: !Ref AHPort
@@ -374,22 +388,32 @@ Resources:
           FromPort: 80
           ToPort: 80
           CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-AHInstanceSecurityGroup
@@ -407,9 +431,59 @@ Resources:
         Fn::ImportValue:
           !Sub '${BaseStack}-VPCID'
 
+  # AH Instance  internal security group
+  AHInstanceSecurityGroupPrivate:
+    Type: AWS::EC2::SecurityGroup
+    Condition: cPrivateNetwork
+    Properties:
+      GroupDescription: Security group private for AH Instance.
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AHInstanceSecurityGroupPrivate
+        - Key: Owner
+          Value: !Ref AdminEmailAddress
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Product
+          Value: McAfee-ePO-AgentHandler
+        - Key: Solution
+          Value: McAfee-ePO
+        - Key: mcafee:cloudformation:stack-name
+          Value: !Sub ${ParentStack}
+      VpcId:
+        Fn::ImportValue:
+          !Sub '${BaseStack}-VPCID'
+
   # AH AWS Elastic Load Balancer
   AHLoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Condition: cPublicNetwork
     Properties:
       AccessLoggingPolicy:
         EmitInterval: 60
@@ -465,6 +539,65 @@ Resources:
         - Key: mcafee:cloudformation:stack-name
           Value: !Sub ${ParentStack}
 
+  # AH AWS Internal Elastic Load Balancer
+  AHInternalLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Condition: cPrivateNetwork
+    Properties:
+      AccessLoggingPolicy:
+        EmitInterval: 60
+        Enabled: true
+        S3BucketName:
+          Fn::ImportValue: !Sub ${BaseStack}-DataStore
+        S3BucketPrefix: 'logs/elb/ah'
+      ConnectionDrainingPolicy:
+        Enabled: true
+        Timeout: 180
+      ConnectionSettings:
+        IdleTimeout: 600
+      CrossZone: true
+      HealthCheck:
+        HealthyThreshold: '3'
+        Interval: '30'
+        Target: !Join
+          - ''
+          - - 'SSL:'
+            - !Ref AHPort
+        Timeout: '15'
+        UnhealthyThreshold: '10'
+      Listeners:
+        - InstancePort: !Ref AHPort
+          InstanceProtocol: TCP
+          LoadBalancerPort: !Ref AHPort
+          PolicyNames: []
+          Protocol: TCP
+          SSLCertificateId: ''
+        - InstancePort: 80
+          InstanceProtocol: TCP
+          LoadBalancerPort: 80
+          PolicyNames: []
+          Protocol: TCP
+          SSLCertificateId: ''
+      Scheme: internal
+      SecurityGroups:
+        - !Ref AHELBSecurityGroup
+      Subnets:
+          - Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1ID
+          - Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2ID
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-AHInternalLoadBalancer
+        - Key: Owner
+          Value: !Ref AdminEmailAddress
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Product
+          Value: McAfee-ePO-AgentHandler
+        - Key: Solution
+          Value: McAfee-ePO
+        - Key: mcafee:cloudformation:stack-name
+          Value: !Sub ${ParentStack}
+
   # IAM policy to add ePO as local agent handler in agent handler AWS ELB, during post deployment
   UpdateELBwithEPOasAHPolicy:
     Type: AWS::IAM::Policy
@@ -483,14 +616,17 @@ Resources:
                     - 'arn:${Partition}:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/'
                     - Partition:
                         !If [ cGovCloudCondition, aws-us-gov, aws ]
-                  - !Ref AHLoadBalancer
+                  - !If
+                    - cPublicNetwork
+                    - !Ref AHLoadBalancer
+                    - !Ref AHInternalLoadBalancer
       Roles:
         - Fn::ImportValue: !Sub ${BaseStack}-PostDeployLambdaRole
 
   # AH AWS Route53 Record Set
   AHR53RecordSet:
     Type: AWS::Route53::RecordSet
-    Condition: cNotGovCloudCondition
+    Condition: cCreateR53Resources
     Properties:
       AliasTarget:
         DNSName: !GetAtt AHLoadBalancer.CanonicalHostedZoneName
@@ -636,11 +772,15 @@ Resources:
               cwd: c:\provision\scripts\
               waitAfterCompletion: '0'
             1setup:
-              command: !Sub >
-                node provision.js --platform aws --component ah --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack}
-                --threadsperchild 250 --db.username ${DBMasterUsername} --db.identifier ${DBInstanceIdentifier}  --db.database ${EPODatabaseName}
-                --epo.serverdns ${EPOServerDNSName} --epo.port 8080 --epo.secure_port ${EPOConsolePort}
-                --ah.port ${AHPort}
+              command: !Join
+                - ' '
+                - - !Sub node provision.js --platform aws --component ah --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack}
+                  - !Sub --threadsperchild 250 --db.username ${DBMasterUsername} --db.identifier ${DBInstanceIdentifier}  --db.database ${EPODatabaseName}
+                  - !Sub --epo.serverdns ${EPOServerDNSName} --epo.port 8080 --epo.secure_port ${EPOConsolePort} --ah.port ${AHPort}
+                  - !If
+                    - cWithProxy
+                    - !Sub --proxy ${WebProxy}
+                    - !Ref 'AWS::NoValue'
               cwd: c:\provision\
               waitAfterCompletion: '0'
 
@@ -653,12 +793,14 @@ Resources:
       ImageId: !Ref AHImageId
       InstanceType: !FindInMap [InstanceTypes, !Ref 'AWS::Region', InstanceType]
       KeyName: !Ref KeyPairName
-      SecurityGroups:
-        - !Ref AHELBSecurityGroup
-        - !Ref AHInstanceSecurityGroup
-        -
-          Fn::ImportValue:
-            !Sub ${BaseStack}-RDPAdminSecurityGroup
+      SecurityGroups: !If
+            - cPrivateNetwork
+            - - !Ref AHInstanceSecurityGroupPrivate
+              - !Ref AHELBSecurityGroup
+            - - !Ref AHInstanceSecurityGroup
+              - !Ref AHELBSecurityGroup
+              - Fn::ImportValue:
+                  !Sub ${BaseStack}-RDPAdminSecurityGroup
       UserData:
         'Fn::Base64': !Sub |
           <script>
@@ -676,7 +818,10 @@ Resources:
       HealthCheckGracePeriod: 3600
       LaunchConfigurationName: !Ref AHLaunchConfig
       LoadBalancerNames:
-        - !Ref AHLoadBalancer
+        - !If
+          - cPublicNetwork
+          - !Ref AHLoadBalancer
+          - !Ref AHInternalLoadBalancer
       MetricsCollection:
         - Granularity: 1Minute
       MaxSize: 8
@@ -973,7 +1118,7 @@ Resources:
           AGGREGATOR_ALAM_NAME: !Sub ${AWS::StackName}-AggregatorAlarm
       Handler: metric-aggregator.handler
       Role: !GetAtt AHMetricAggregatorLambdaRole.Arn
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       Timeout: 120
       Tags:
         - Key: Name
@@ -1251,18 +1396,27 @@ Outputs:
   AHServerDNSName:
     Description: AH Server DNS Name
     Value: !If
-      - cNotGovCloudCondition
+      - cCreateR53Resources
       - !Ref AHR53RecordSet
-      - !GetAtt [ AHLoadBalancer, CanonicalHostedZoneName ]
+      - !If
+        - cPublicNetwork
+        - !GetAtt [ AHLoadBalancer, CanonicalHostedZoneName ]
+        - !GetAtt [ AHInternalLoadBalancer, DNSName ]
   AHCommunicationPort:
     Description: AH Communication Port
     Value: !Ref AHPort
   AHLoadBalancer:
     Description: AH AWS Elastic Load Balancer
-    Value: !Ref AHLoadBalancer
+    Value: !If
+      - cPublicNetwork
+      - !Ref AHLoadBalancer
+      - !Ref AHInternalLoadBalancer
   AHLoadBalancerURL:
     Description: AH AWS Elastic Load Balancer URL
-    Value: !GetAtt [ AHLoadBalancer, CanonicalHostedZoneName ]
+    Value: !If
+      - cPublicNetwork
+      - !GetAtt [ AHLoadBalancer, CanonicalHostedZoneName ]
+      - !GetAtt [ AHInternalLoadBalancer, DNSName ]
   AHAutoscalingGroup:
     Description: AH Auto Scaling Group
     Value: !Ref AHAutoscalingGroup

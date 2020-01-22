@@ -10,6 +10,8 @@ Metadata:
         Parameters:
           - Environment
           - Availability
+          - PublicNetwork
+          - WebProxy
           - KeyPairName
       - Label:
           default: Peer-Parent Stack Configuration
@@ -48,6 +50,10 @@ Metadata:
         default: Deployment Environment
       Availability:
         default: High Availability
+      PublicNetwork:
+        default: Public Network Allowed
+      WebProxy:
+        default: Web Proxy
       KeyPairName:
         default: AWS Key Pair Name
       ParentStack:
@@ -98,6 +104,18 @@ Parameters:
       - 'No'
     Default: 'Yes'
     Description: We recommend selecting 'Yes' for production environments. It is applicable for Agent Handlers, DXL Brokers, RDS.
+    Type: String
+  PublicNetwork:
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'Yes'
+    Description: Select 'Yes' if public access allowed.
+    Type: String
+  WebProxy:
+    Description: >-
+      [Optional] Web Proxy URL which can be used by instances for outbound traffic.
+    Default: ''
     Type: String
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.
@@ -253,6 +271,9 @@ Conditions:
   cGovCloudCondition: !Or
     - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
     - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
+  cPrivateNetwork: !Equals [!Ref PublicNetwork, 'No']
+  cPublicNetwork: !Equals [!Ref PublicNetwork, 'Yes']
+  cWithProxy: !Not [ !Equals [ !Ref 'WebProxy', '' ] ]
 
 Rules:
   MatchPassword:
@@ -303,6 +324,7 @@ Resources:
   # DXL Instance internal security group
   DXLInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    Condition: cPublicNetwork
     Properties:
       GroupDescription: Security group for DXL Instance.
       SecurityGroupEgress:
@@ -315,16 +337,6 @@ Resources:
           FromPort: 8883
           ToPort: 8883
           CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: 8883
-          ToPort: 8883
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: 8883
-          ToPort: 8883
-          CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
           FromPort: 8883
@@ -335,22 +347,32 @@ Resources:
           FromPort: 8081
           ToPort: 8081
           CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: 8081
-          ToPort: 8081
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: 8081
-          ToPort: 8081
-          CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
           FromPort: 8081
           ToPort: 8081
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 8883
+          ToPort: 8883
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8883
+          ToPort: 8883
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-DXLInstanceSecurityGroup
@@ -368,9 +390,59 @@ Resources:
         Fn::ImportValue:
           !Sub ${BaseStack}-VPCID
 
+  # DXL Instance internal security group
+  DXLInstanceSecurityGroupPrivate:
+    Type: AWS::EC2::SecurityGroup
+    Condition: cPrivateNetwork
+    Properties:
+      GroupDescription: Security group private for DXL Instance.
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8883
+          ToPort: 8883
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8883
+          ToPort: 8883
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8081
+          ToPort: 8081
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-DXLInstanceSecurityGroupPrivate
+        - Key: Owner
+          Value: !Ref AdminEmailAddress
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Product
+          Value: McAfee-DXL
+        - Key: Solution
+          Value: McAfee-ePO
+        - Key: mcafee:cloudformation:stack-name
+          Value: !Sub ${ParentStack}
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${BaseStack}-VPCID
+
   # DXL AWS Elastic Load Balancer
   DXLLoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Condition: cPublicNetwork
     Properties:
       AccessLoggingPolicy:
         EmitInterval: 60
@@ -406,6 +478,56 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-DXLLoadBalancer
+        - Key: Owner
+          Value: !Ref AdminEmailAddress
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Product
+          Value: McAfee-DXL
+        - Key: Solution
+          Value: McAfee-ePO
+        - Key: mcafee:cloudformation:stack-name
+          Value: !Sub ${ParentStack}
+
+  # DXL AWS Internal Elastic Load Balancer
+  DXLInternalLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Condition: cPrivateNetwork
+    Properties:
+      AccessLoggingPolicy:
+        EmitInterval: 60
+        Enabled: true
+        S3BucketName:
+          Fn::ImportValue: !Sub ${BaseStack}-DataStore
+        S3BucketPrefix: 'logs/elb/dxl'
+      ConnectionDrainingPolicy:
+        Enabled: true
+        Timeout: 180
+      ConnectionSettings:
+        IdleTimeout: 600
+      CrossZone: true
+      HealthCheck:
+        HealthyThreshold: '3'
+        Interval: '30'
+        Target: 'TCP:8883'
+        Timeout: '15'
+        UnhealthyThreshold: '2'
+      Listeners:
+        - InstancePort: 8883
+          InstanceProtocol: TCP
+          LoadBalancerPort: !Ref DXLPort
+          PolicyNames: []
+          Protocol: TCP
+          SSLCertificateId: ''
+      Scheme: internal
+      SecurityGroups:
+        - !Ref DXLELBSecurityGroup
+      Subnets:
+          - Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1ID
+          - Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2ID
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-DXLInternalLoadBalancer
         - Key: Owner
           Value: !Ref AdminEmailAddress
         - Key: Environment
@@ -579,6 +701,8 @@ Resources:
                 DXL_BROKER_PORT=8883
                 DXL_ELB_PORT=${DXLPort}
                 PARAMETERS_PATH=/mcafee/${ParentStack}
+                HTTP_PROXY=${WebProxy}
+                HTTPS_PROXY=${WebProxy}
 
                 # Start dxl Provisioining
                 /home/centos/provision/dxl-provision.py --epo-serverdns $EPO_SERVER --epo-port $EPO_PORT --epo-secure-port $EPO_SECURE_PORT --epo-wakeup-port $EPO_WAKEUP_PORT  --dxl-broker-port $DXL_BROKER_PORT --dxl-elb-port $DXL_ELB_PORT --parameters-path $PARAMETERS_PATH
@@ -595,12 +719,14 @@ Resources:
       ImageId: !Ref DXLImageId
       InstanceType: !FindInMap [InstanceTypes, !Ref 'AWS::Region', InstanceType]
       KeyName: !Ref KeyPairName
-      SecurityGroups:
-        - !Ref DXLELBSecurityGroup
-        - !Ref DXLInstanceSecurityGroup
-        -
-          Fn::ImportValue:
-            !Sub ${BaseStack}-RDPAdminSecurityGroup
+      SecurityGroups: !If
+            - cPrivateNetwork
+            - - !Ref DXLInstanceSecurityGroupPrivate
+              - !Ref DXLELBSecurityGroup
+            - - !Ref DXLInstanceSecurityGroup
+              - !Ref DXLELBSecurityGroup
+              - Fn::ImportValue:
+                  !Sub ${BaseStack}-RDPAdminSecurityGroup
       UserData:
         'Fn::Base64': !Sub |
           #!/bin/bash -x
@@ -617,7 +743,10 @@ Resources:
       HealthCheckGracePeriod: 3600
       LaunchConfigurationName: !Ref DXLLaunchConfig
       LoadBalancerNames:
-        - !Ref DXLLoadBalancer
+        - !If
+          - cPublicNetwork
+          - !Ref DXLLoadBalancer
+          - !Ref DXLInternalLoadBalancer
       MetricsCollection:
         - Granularity: 1Minute
       MaxSize: 10
@@ -1049,10 +1178,16 @@ Outputs:
     Value: !Ref DXLPort
   DXLLoadBalancer:
     Description: DXL AWS Elastic Load Balancer
-    Value: !Ref DXLLoadBalancer
+    Value: !If
+        - cPublicNetwork
+        - !Ref DXLLoadBalancer
+        - !Ref DXLInternalLoadBalancer
   DXLLoadBalancerURL:
     Description: DXL Elastic Load Balancer URL
-    Value: !GetAtt [ DXLLoadBalancer, CanonicalHostedZoneName ]
+    Value: !If
+        - cPublicNetwork
+        - !GetAtt [ DXLLoadBalancer, CanonicalHostedZoneName ]
+        - !GetAtt [ DXLInternalLoadBalancer, DNSName ]
   DXLAutoscalingGroup:
     Description: DXL Auto Scaling Group
     Value: !Ref DXLAutoscalingGroup

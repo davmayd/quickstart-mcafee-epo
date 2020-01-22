@@ -28,6 +28,8 @@ Metadata:
           - DBInstanceSize
           - DBIops
           - DBInstanceIdentifier
+          - DBEncrypted
+          - DBEncryptionKmsKeyARN
       - Label:
           default: Administration Configuration
         Parameters:
@@ -59,6 +61,10 @@ Metadata:
         default: DB IOPS
       DBInstanceIdentifier:
         default: DB Instance Identifier
+      DBEncrypted:
+        default: DB Encrypted
+      DBEncryptionKmsKeyARN:
+        default: DB Encryption Kms Key Id ARN
       AdminEmailAddress:
         default: Operator Email
 
@@ -149,6 +155,22 @@ Parameters:
     MaxLength: 512
     Description: Database instance identifier unique for this AWS region.
     Type: String
+  DBEncrypted:
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'No'
+    Description: Recommended, Enables RDS DB encryption.
+    Type: String
+  DBEncryptionKmsKeyARN:
+    AllowedPattern: ^$|((arn:aws:)|(arn:aws-us-gov:))([a-z])([a-z0-9/:-])*([a-z0-9])$
+    Default: ''
+    Description: >-
+      [ Optional ] ARN of the RDS DB Instance.
+      Default KMS Key will be used if user selects DB encryption.
+      KMS Key will be associatded to RDS DB encryption e.g., arn:aws:*:us-west-1:*:key/* or arn:aws-us-gov:*:us-west-1:*:key/* .
+    MaxLength: 256
+    Type: String
   AdminEmailAddress:
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,8}|[0-9]{1,3})(\]?)
     ConstraintDescription: Must be a valid email address.
@@ -162,6 +184,15 @@ Rules:
             - !Ref DBMasterUserPassword
             - !Ref ConfirmDBMasterUserPassword
         AssertDescription:  DB Master Passwords do not match.
+  ValidateDBEncryptParams:
+    RuleCondition: !Equals
+        - !Ref DBEncrypted
+        - 'No'
+    Assertions:
+      - Assert: !Equals
+            - !Ref DBEncryptionKmsKeyARN
+            - ''
+        AssertDescription: DB Encryption Kms Key ARN should be empty if DB encrypted parameter is No
 
 Conditions:
   cCreateInstanceId: !Equals [ !Ref 'DBInstanceIdentifier', '' ]
@@ -172,6 +203,8 @@ Conditions:
     - !Not [ !Equals [ !Sub '${AWS::Region}', 'us-west-1' ] ]
     - !Not [ !Equals [ !Sub '${AWS::Region}', 'us-gov-west-1' ] ]
     - !Not [ !Equals [ !Sub '${AWS::Region}', 'us-gov-east-1' ] ]
+  cDBEncrypted: !Equals [ !Ref DBEncrypted, 'Yes' ]
+  cKmsKeyId: !Not [ !Equals [ !Ref DBEncryptionKmsKeyARN, ''] ]
 
 Resources:
   # AWS RDS subnet group
@@ -222,7 +255,7 @@ Resources:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
       Tags:
         - Key: Name
-          Value: !Sub ${AWS::StackName}-EPORDSDatabase
+          Value: !Sub ${AWS::StackName}-RDSDBInternalSecurityGroup
         - Key: Owner
           Value: !Ref AdminEmailAddress
         - Key: Environment
@@ -242,36 +275,44 @@ Resources:
     Type: AWS::RDS::DBInstance
     DeletionPolicy: Delete
     Properties:
-      AllocatedStorage: !Ref DBAllocatedStorage
-      BackupRetentionPeriod: !Ref DBBackupRetentionPeriod
-      CopyTagsToSnapshot: true
-      DBInstanceClass: !Ref DBInstanceSize
-      DBInstanceIdentifier: !If [cCreateInstanceId, '!Sub ${AWS::StackName}-rds', !Ref DBInstanceIdentifier]
-      DBSubnetGroupName: !Ref RDSDBSubnetGroup
-      Engine: !Ref DBEngine
-      EngineVersion: !Ref DBEngineVersion
-      Port: !Ref DBPort
-      Iops: !Ref DBIops
-      LicenseModel: license-included
-      MasterUsername: !Ref DBMasterUsername
-      MasterUserPassword: !Ref DBMasterUserPassword
-      MultiAZ: !If [cHARequired, true, false]
-      PubliclyAccessible: false
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-EPORDSDatabase
-        - Key: Owner
-          Value: !Ref AdminEmailAddress
-        - Key: Environment
-          Value: !Ref Environment
-        - Key: Product
-          Value: McAfee-ePO-Database
-        - Key: Solution
-          Value: McAfee-ePO
-        - Key: mcafee:cloudformation:stack-name
-          Value: !Sub ${ParentStack}
-      VPCSecurityGroups:
-        - !Ref RDSDBInternalSecurityGroup
+          AllocatedStorage: !Ref DBAllocatedStorage
+          BackupRetentionPeriod: !Ref DBBackupRetentionPeriod
+          CopyTagsToSnapshot: true
+          DBInstanceClass: !Ref DBInstanceSize
+          DBInstanceIdentifier: !If [cCreateInstanceId, '!Sub ${AWS::StackName}-rds', !Ref DBInstanceIdentifier]
+          DBSubnetGroupName: !Ref RDSDBSubnetGroup
+          Engine: !Ref DBEngine
+          EngineVersion: !Ref DBEngineVersion
+          Port: !Ref DBPort
+          Iops: !Ref DBIops
+          LicenseModel: license-included
+          MasterUsername: !Ref DBMasterUsername
+          MasterUserPassword: !Ref DBMasterUserPassword
+          MultiAZ: !If [cHARequired, true, false]
+          PubliclyAccessible: false
+          StorageEncrypted: !If
+              - cDBEncrypted
+              - true
+              - !Ref 'AWS::NoValue'
+          KmsKeyId: !If
+              - cKmsKeyId
+              - !Ref DBEncryptionKmsKeyARN
+              - !Ref 'AWS::NoValue'
+          Tags:
+            - Key: Name
+              Value: !Sub ${AWS::StackName}-EPORDSDatabase
+            - Key: Owner
+              Value: !Ref AdminEmailAddress
+            - Key: Environment
+              Value: !Ref Environment
+            - Key: Product
+              Value: McAfee-ePO-Database
+            - Key: Solution
+              Value: McAfee-ePO
+            - Key: mcafee:cloudformation:stack-name
+              Value: !Sub ${ParentStack}
+          VPCSecurityGroups:
+            - !Ref RDSDBInternalSecurityGroup
 
 Outputs:
   DatabaseStackName:

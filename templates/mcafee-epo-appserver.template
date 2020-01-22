@@ -11,6 +11,8 @@ Metadata:
         Parameters:
           - Environment
           - SubDomainName
+          - PublicNetwork
+          - WebProxy
           - KeyPairName
       - Label:
           default: Peer-Parent Stack Configuration
@@ -66,6 +68,10 @@ Metadata:
         default: Deployment Environment
       SubDomainName:
         default: Sub Domain Name
+      PublicNetwork:
+        default: Public Network Allowed
+      WebProxy:
+        default: Web Proxy
       KeyPairName:
         default: AWS Key Pair Name
       ParentStack:
@@ -138,6 +144,18 @@ Parameters:
       domain name so that public DNS records can be propagated automatically OR add the sub domain Name Server(NS) records into your main domain server.
     Default: ''
     MaxLength: 256
+    Type: String
+  PublicNetwork:
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'Yes'
+    Description: Select 'Yes' if public access allowed.
+    Type: String
+  WebProxy:
+    Description: >-
+      [Optional] Web Proxy URL which can be used by instances for outbound traffic.
+    Default: ''
     Type: String
   KeyPairName:
     Description: The name of an existing public/private key pair, which allows you to securely connect to your instance after it launches.
@@ -337,7 +355,12 @@ Conditions:
   cGovCloudCondition: !Or
     - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
     - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
-  cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
+  cPrivateNetwork: !Equals [!Ref PublicNetwork, 'No']
+  cPublicNetwork: !Equals [!Ref PublicNetwork, 'Yes']
+  cCreateR53Resources: !And
+    - !Not [ !Condition cGovCloudCondition ]
+    - !Not [ !Condition cPrivateNetwork ]
+  cWithProxy: !Not [ !Equals [ !Ref 'WebProxy', '' ] ]
 
 Rules:
   MatchPassword:
@@ -487,6 +510,7 @@ Resources:
   # ePO Instance internal security group
   EPOInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
+    Condition: cPublicNetwork
     Properties:
       GroupDescription: Security group for ePO Instance.
       SecurityGroupEgress:
@@ -506,6 +530,51 @@ Resources:
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
         - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 8444
+          ToPort: 8444
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8444
+          ToPort: 8444
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            !Ref ClientAccessCIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
+        - IpProtocol: tcp
           FromPort: !Ref EPOConsolePort
           ToPort: !Ref EPOConsolePort
           CidrIp:
@@ -519,32 +588,12 @@ Resources:
           FromPort: 8080
           ToPort: 8080
           CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: 8080
-          ToPort: 8080
-          CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
           FromPort: 8080
           ToPort: 8080
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: 8444
-          ToPort: 8444
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: 8444
-          ToPort: 8444
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
         - IpProtocol: tcp
           FromPort: 8444
           ToPort: 8444
@@ -564,32 +613,12 @@ Resources:
           FromPort: !Ref AHPort
           ToPort: !Ref AHPort
           CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: !Ref AHPort
-          ToPort: !Ref AHPort
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: !Ref AHPort
-          ToPort: !Ref AHPort
-          CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
         - IpProtocol: tcp
           FromPort: !Ref AHPort
           ToPort: !Ref AHPort
           CidrIp:
             Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet1CIDR
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp:
-            Fn::ImportValue: !Sub ${BaseStack}-PublicSubnet2CIDR
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
@@ -603,6 +632,90 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-EPOInstanceSecurityGroup
+        - Key: Owner
+          Value: !Ref AdminEmailAddress
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Product
+          Value: McAfee-ePO-ApplicationServer
+        - Key: Solution
+          Value: McAfee-ePO
+        - Key: mcafee:cloudformation:stack-name
+          Value: !Sub ${ParentStack}
+      VpcId:
+        Fn::ImportValue:
+          !Sub ${BaseStack}-VPCID
+
+  # ePO Instance internal security group
+  EPOInstanceSecurityGroupPrivate:
+    Type: AWS::EC2::SecurityGroup
+    Condition: cPrivateNetwork
+    Properties:
+      GroupDescription: Security group private for ePO Instance.
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: !Ref EPOConsolePort
+          ToPort: !Ref EPOConsolePort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref EPOConsolePort
+          ToPort: !Ref EPOConsolePort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 8444
+          ToPort: 8444
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 8444
+          ToPort: 8444
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            !Ref ClientAccessCIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref AHPort
+          ToPort: !Ref AHPort
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1CIDR
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp:
+            Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EPOInstanceSecurityGroupPrivate
         - Key: Owner
           Value: !Ref AdminEmailAddress
         - Key: Environment
@@ -705,12 +818,15 @@ Resources:
     Type: AWS::EC2::NetworkInterface
     Properties:
       Description: Private static IP for ePO in private subnet 1
-      GroupSet:
-        - !Ref EPOELBSecurityGroup
-        - !Ref EPOInstanceSecurityGroup
-        -
-          Fn::ImportValue:
-            !Sub ${BaseStack}-RDPAdminSecurityGroup
+      GroupSet: !If
+            - cPrivateNetwork
+            - - !Ref EPOInstanceSecurityGroupPrivate
+              - !Ref EPOELBSecurityGroup
+            - - !Ref EPOInstanceSecurityGroup
+              - !Ref EPOELBSecurityGroup
+              - Fn::ImportValue:
+                  !Sub ${BaseStack}-RDPAdminSecurityGroup
+
       SourceDestCheck: 'false'
       SubnetId:
         Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1ID
@@ -762,9 +878,12 @@ Resources:
                 - ' '
                 - - !GetAtt [ EPOEC2NetworkInterface, PrimaryPrivateIpAddress ]
                   - !If
-                    - cNotGovCloudCondition
+                    - cCreateR53Resources
                     - !Sub epo.${SubDomainName}
-                    - !GetAtt EPOLoadBalancer.DNSName
+                    - !If
+                        - cPublicNetwork
+                        - !GetAtt EPOLoadBalancer.DNSName
+                        - !GetAtt EPOInternalLoadBalancer.DNSName
           services:
             windows:
               cfn-hup:
@@ -788,10 +907,17 @@ Resources:
                 - - !Sub node provision.js --platform aws --component epo --region ${AWS::Region} --stackname ${AWS::StackName} --rootstackname ${ParentStack} --paramspath /mcafee/${ParentStack}
                   - !Sub --db.username ${DBMasterUsername} --db.database ${EPODatabaseName} --db.identifier ${DBInstanceIdentifier} --epo.serverdns
                   - !If
-                    - cNotGovCloudCondition
+                    - cCreateR53Resources
                     - !Sub epo.${SubDomainName}
-                    - !GetAtt EPOLoadBalancer.DNSName
+                    - !If
+                        - cPublicNetwork
+                        - !GetAtt EPOLoadBalancer.DNSName
+                        - !GetAtt EPOInternalLoadBalancer.DNSName
                   - !Sub --epo.port 8080 --epo.secure_port ${EPOConsolePort} --ah.port ${AHPort} --threadsperchild 250
+                  - !If
+                    - cWithProxy
+                    - !Sub --proxy ${WebProxy}
+                    - !Ref 'AWS::NoValue'
               cwd: c:\provision\
               waitAfterCompletion: '0'
     Properties:
@@ -873,6 +999,7 @@ Resources:
   # ePO AWS Application Load Balancer
   EPOLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Condition: cPublicNetwork
     Properties:
       LoadBalancerAttributes:
         - Key: access_logs.s3.enabled
@@ -904,6 +1031,42 @@ Resources:
         - Key: mcafee:cloudformation:stack-name
           Value: !Sub ${ParentStack}
 
+  # ePO AWS Internal Application Load Balancer
+  EPOInternalLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Condition: cPrivateNetwork
+    Properties:
+      LoadBalancerAttributes:
+        - Key: access_logs.s3.enabled
+          Value: true
+        - Key: access_logs.s3.bucket
+          Value:
+            Fn::ImportValue: !Sub ${BaseStack}-DataStore
+        - Key: access_logs.s3.prefix
+          Value: 'logs/elb/epo'
+        - Key: idle_timeout.timeout_seconds
+          Value: 600
+      Scheme: internal
+      SecurityGroups:
+        - !Ref EPOELBSecurityGroup
+      Subnets:
+        - Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet1ID
+        - Fn::ImportValue: !Sub ${BaseStack}-PrivateSubnet2ID
+      Type: application
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-EPOInternalLoadBalancer
+        - Key: Owner
+          Value: !Ref AdminEmailAddress
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Product
+          Value: McAfee-ePO-ApplicationServer
+        - Key: Solution
+          Value: McAfee-ePO
+        - Key: mcafee:cloudformation:stack-name
+          Value: !Sub ${ParentStack}
+
   # ePO Application Load Balancer Listener with user provided certificate
   EPOLoadBalancerListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -914,7 +1077,10 @@ Resources:
       DefaultActions:
         - TargetGroupArn: !Ref EPOTargetGroup
           Type: forward
-      LoadBalancerArn: !Ref EPOLoadBalancer
+      LoadBalancerArn: !If
+          - cPublicNetwork
+          - !Ref EPOLoadBalancer
+          - !Ref EPOInternalLoadBalancer
       Port: !Ref EPOConsolePort
       Protocol: HTTPS
       SslPolicy: ELBSecurityPolicy-TLS-1-1-2017-01
@@ -929,7 +1095,10 @@ Resources:
       DefaultActions:
         - TargetGroupArn: !Ref EPOTargetGroup
           Type: forward
-      LoadBalancerArn: !Ref EPOLoadBalancer
+      LoadBalancerArn: !If
+          - cPublicNetwork
+          - !Ref EPOLoadBalancer
+          - !Ref EPOInternalLoadBalancer
       Port: !Ref EPOConsolePort
       Protocol: HTTP
 
@@ -983,7 +1152,10 @@ Resources:
       DefaultActions:
         - TargetGroupArn: !Ref EPOLocalAHTargetGroup
           Type: forward
-      LoadBalancerArn: !Ref EPOLoadBalancer
+      LoadBalancerArn: !If
+          - cPublicNetwork
+          - !Ref EPOLoadBalancer
+          - !Ref EPOInternalLoadBalancer
       Port: !Ref AHPort
       Protocol: HTTPS
       SslPolicy: ELBSecurityPolicy-TLS-1-1-2017-01
@@ -995,7 +1167,10 @@ Resources:
       DefaultActions:
         - TargetGroupArn: !Ref EPOLocalAHTargetGroup
           Type: forward
-      LoadBalancerArn: !Ref EPOLoadBalancer
+      LoadBalancerArn: !If
+          - cPublicNetwork
+          - !Ref EPOLoadBalancer
+          - !Ref EPOInternalLoadBalancer
       Port: !Ref AHPort
       Protocol: HTTP
 
@@ -1043,7 +1218,7 @@ Resources:
   # ePO Record Set
   EPOR53RecordSet:
     Type: AWS::Route53::RecordSet
-    Condition: cNotGovCloudCondition
+    Condition: cCreateR53Resources
     Properties:
       AliasTarget:
         DNSName: !GetAtt EPOLoadBalancer.DNSName
@@ -1518,7 +1693,7 @@ Outputs:
     Description: ePO application server stack name
     Value: !Ref AWS::StackName
   ePOConsoleURL:
-    Condition: cNotGovCloudCondition
+    Condition: cCreateR53Resources
     Description: McAfee ePO console URL via sub domain name.
     Value: !Join
       - ''
@@ -1531,7 +1706,10 @@ Outputs:
     Value: !Join
       - ''
       - - 'https://'
-        - !GetAtt EPOLoadBalancer.DNSName
+        - !If
+            - cPublicNetwork
+            - !GetAtt EPOLoadBalancer.DNSName
+            - !GetAtt EPOInternalLoadBalancer.DNSName
         - ':'
         - !Ref EPOConsolePort
   ePOConsolePort:
@@ -1539,16 +1717,25 @@ Outputs:
     Value: !Ref EPOConsolePort
   ePOLoadbalancerName:
     Description: EPO Amazon Elastic Load Balancer
-    Value: !GetAtt EPOLoadBalancer.LoadBalancerName
+    Value: !If
+          - cPublicNetwork
+          - !GetAtt EPOLoadBalancer.LoadBalancerName
+          - !GetAtt EPOInternalLoadBalancer.LoadBalancerName
   EPOServerDNSName:
     Description: ePO Server DNS Name
     Value: !If
-        - cNotGovCloudCondition
+        - cCreateR53Resources
         - !Ref EPOR53RecordSet
-        - !GetAtt EPOLoadBalancer.DNSName
+        - !If
+            - cPublicNetwork
+            - !GetAtt EPOLoadBalancer.DNSName
+            - !GetAtt EPOInternalLoadBalancer.DNSName
   EPOLoadBalancerURL:
     Description: EPO Load Balancer URL
-    Value: !GetAtt EPOLoadBalancer.DNSName
+    Value: !If
+        - cPublicNetwork
+        - !GetAtt EPOLoadBalancer.DNSName
+        - !GetAtt EPOInternalLoadBalancer.DNSName
   EPOEC2Instance:
     Description: EPO EC2 instance Name
     Value: !Ref EPOEC2Instance

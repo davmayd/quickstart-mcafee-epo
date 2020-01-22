@@ -4,11 +4,11 @@
     "Name": "ePolicy Orchestrator"
 	},
 	"AH": {
-		"BuildVersion": "5.10.0.2727.5",
+		"BuildVersion": "5.10.0.2428.18",
     "Name": "Agent Handler"
 	},
 	"DXL": {
-		"BuildVersion": "5.0.1.198.1",
+		"BuildVersion": "6.0.0.197.2",
     "Name": "Data Exchange Layer Broker"
 	}
 }

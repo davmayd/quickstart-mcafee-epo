@@ -52,6 +52,8 @@ Metadata:
       - DBAllocatedStorage
       - DBBackupRetentionPeriod
       - DBInstanceIdentifier
+      - DBEncrypted
+      - DBEncryptionKmsKeyARN
     - Label:
         default: Client Communication Configuration
       Parameters:
@@ -136,6 +138,10 @@ Metadata:
         default: DB Backup Retention Period
       DBInstanceIdentifier:
         default: DB Instance Identifier
+      DBEncrypted:
+        default: DB Encrypted
+      DBEncryptionKmsKeyARN:
+        default: DB Encryption Kms Key Id ARN
       AHPort:
         default: Agent Handler Port
       DXLPort:
@@ -149,7 +155,7 @@ Metadata:
       ApproverEmailAddress:
         default: Approver Email
       AdminEmailAddress:
-        default: Admin Email
+        default: Operator Email
       AutoCleanup:
         default: Auto Cleanup
       QSS3BucketName:
@@ -434,6 +440,23 @@ Parameters:
     Description: Specify your existing database instance identifier. Leave it blank
       to create new database instance.
     Type: String
+  DBEncrypted:
+    AllowedValues:
+    - 'Yes'
+    - 'No'
+    Default: 'No'
+    Description: Recommended, Enables RDS DB encryption.
+    Type: String
+  DBEncryptionKmsKeyARN:
+    AllowedPattern: ^$|((arn:aws:)|(arn:aws-us-gov:))([a-z])([a-z0-9/:-])*([a-z0-9])$
+    Default: ''
+    Description: >-
+      [ Optional ] ARN of the RDS DB Instance.
+      Default KMS Key will be used if user selects DB encryption.
+      KMS Key will be associatded to RDS DB encryption e.g., arn:aws:*:us-west-1:*:key/*
+      or arn:aws-us-gov:*:us-west-1:*:key/* .
+    MaxLength: 256
+    Type: String
   AHPort:
     Default: '443'
     Description: The agent server communication(ASC) port used by the McAfee Agent
@@ -565,34 +588,44 @@ Rules:
       - !Ref DBMasterUserPassword
       - !Ref ConfirmDBMasterUserPassword
       AssertDescription: DB Master Passwords do not match.
+  ValidateDBEncryptParams:
+    RuleCondition: !Equals
+    - !Ref DBEncrypted
+    - 'No'
+    Assertions:
+    - Assert: !Equals
+      - !Ref DBEncryptionKmsKeyARN
+      - ''
+      AssertDescription: DB Encryption Kms Key ARN should be empty if DB encrypted
+        parameter is No
 
 Mappings:
   AWSAMIRegionMap:
     AMI:
       MFEBASTIONHVM: McAfee Bastion Image
     us-west-2:
-      MFEBASTIONHVM: ami-0f98479d1b48caffa
+      MFEBASTIONHVM: ami-04e739ed6c069b343
 
-    eu-central-1:
-      MFEBASTIONHVM: ami-0501226a9a723a1b1
     ca-central-1:
-      MFEBASTIONHVM: ami-0f59fdbea0f29f6e2
-    ap-southeast-2:
-      MFEBASTIONHVM: ami-074b581119261051a
-    eu-west-2:
-      MFEBASTIONHVM: ami-09d7276987a8a6555
-    ap-northeast-1:
-      MFEBASTIONHVM: ami-0e8e34ef11e958e30
-    us-west-1:
-      MFEBASTIONHVM: ami-0afbdc145e002d79d
-    us-east-2:
-      MFEBASTIONHVM: ami-0ad90bb0f2c12d9af
+      MFEBASTIONHVM: ami-00d8e33f62f2145de
     us-east-1:
-      MFEBASTIONHVM: ami-0f5e019d5ee1f358a
+      MFEBASTIONHVM: ami-0131d8269d9fd7a8e
+    us-east-2:
+      MFEBASTIONHVM: ami-026b1c1c0258dba29
+    eu-west-2:
+      MFEBASTIONHVM: ami-05338c59999f81067
     eu-west-3:
-      MFEBASTIONHVM: ami-0dbbc579d116cb04a
+      MFEBASTIONHVM: ami-09fa2fd16af117d08
     ap-southeast-1:
-      MFEBASTIONHVM: ami-0c55c5763b1f4721c
+      MFEBASTIONHVM: ami-08f1a5d1e6b4ffb74
+    ap-northeast-1:
+      MFEBASTIONHVM: ami-0ddcd5b5f0e78d82f
+    ap-southeast-2:
+      MFEBASTIONHVM: ami-0fcec06ee44d60ad1
+    us-west-1:
+      MFEBASTIONHVM: ami-0898f3c24a91f6ba1
+    eu-central-1:
+      MFEBASTIONHVM: ami-07955408f6f88ff96
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
@@ -696,6 +729,8 @@ Resources:
         DBAllocatedStorage: !Ref DBAllocatedStorage
         DBBackupRetentionPeriod: !Ref DBBackupRetentionPeriod
         DBInstanceIdentifier: !Ref DBInstanceIdentifier
+        DBEncrypted: !Ref DBEncrypted
+        DBEncryptionKmsKeyARN: !Ref DBEncryptionKmsKeyARN
         AHPort: !Ref AHPort
         DXLPort: !Ref DXLPort
         ClientAccessCIDR: !Ref ClientAccessCIDR

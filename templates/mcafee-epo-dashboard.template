@@ -10,6 +10,7 @@ Metadata:
           default: McAfee ePolicy Orchestrator Platform Configuration
         Parameters:
           - Environment
+          - PublicNetwork
       - Label:
           default: Peer-Parent Stack Configuration
         Parameters:
@@ -45,6 +46,8 @@ Metadata:
     ParameterLabels:
       Environment:
         default: Deployment Environment
+      PublicNetwork:
+        default: Public Network Allowed
       ParentStack:
         default: Parent Stack
       EPOConsoleURL:
@@ -92,6 +95,13 @@ Parameters:
       - 'Development'
     Default: 'Production'
     Description: What is the targeted deployment environment?
+    Type: String
+  PublicNetwork:
+    AllowedValues:
+      - 'Yes'
+      - 'No'
+    Default: 'Yes'
+    Description: Select 'Yes' if public access allowed.
     Type: String
   ParentStack:
     Description: Parent stack name by which pipeline stack is deriving if any.
@@ -210,6 +220,7 @@ Conditions:
     - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
     - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
   cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
+  cPublicNetwork: !Equals [!Ref PublicNetwork, 'Yes']
 
 Resources:
   # Update AWS Cloudwatch Dashboard lambda Role
@@ -315,7 +326,10 @@ Resources:
       KeyPrefix: !Sub ${QSS3KeyPrefix}
       DashboardPath: !If
             - cNotGovCloudCondition
-            - !Sub ${QSS3KeyPrefix}assets/dashboard/json/mcafee_solution_dashboard.json
+            - !If
+              - cPublicNetwork
+              - !Sub ${QSS3KeyPrefix}assets/dashboard/json/mcafee_solution_dashboard.json
+              - !Sub ${QSS3KeyPrefix}assets/dashboard/json/mcafee_solution_dashboard_private.json
             - !Sub ${QSS3KeyPrefix}assets/dashboard/json/mcafee_solution_dashboard_gov_cloud.json
       DashboardName: !Sub ${ParentStack}_${AWS::Region}
       ParentStack: !Sub ${ParentStack}

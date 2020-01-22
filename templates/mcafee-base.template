@@ -108,10 +108,12 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   PublicSubnet1ID:
     Description: ID of public subnet 1 in Availability Zone 1 for the ELB load balancer (e.g., subnet-9bc642ac)
-    Type: AWS::EC2::Subnet::Id
+    Default: ''
+    Type: String
   PublicSubnet2ID:
     Description: ID of public subnet 2 in Availability Zone 2 for the ELB load balancer (e.g., subnet-e3246d8e)
-    Type: AWS::EC2::Subnet::Id
+    Default: ''
+    Type: String
   PrivateSubnet1ID:
     Description: ID of private subnet 1 in Availability Zone 1 for the McAfee application components (e.g., subnet-a0246dcd)
     Type: AWS::EC2::Subnet::Id
@@ -120,7 +122,8 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
   BastionSecurityGroupID:
     Description: ID of the bastion host security group to enable SSH connections (e.g., sg-7f16e910)
-    Type: AWS::EC2::SecurityGroup::Id
+    Default: ''
+    Type: String
   DBInstanceIdentifier:
     Default: ''
     MaxLength: 512
@@ -220,9 +223,15 @@ Conditions:
   cGovCloudCondition: !Or
     - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
     - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
-  cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
-  cExistingDomain: !And
+  cPublicNetwork: !And
+    - !Not [ !Equals [ !Ref PublicSubnet1ID, '' ] ]
+    - !Not [ !Equals [ !Ref PublicSubnet2ID, '' ] ]
+  cPrivateNetwork: !Not [ !Condition cPublicNetwork ]
+  cCreateR53Resources: !And
     - !Not [ !Condition cGovCloudCondition ]
+    - !Not [ !Condition cPrivateNetwork ]
+  cExistingDomain: !And
+    - !Condition cCreateR53Resources
     - !Not [ !Equals [ !Ref DomainName, '' ] ]
 
 Resources:
@@ -1022,7 +1031,7 @@ Resources:
         Variables:
           LOG_GROUP: !Ref ELBLogGroup
       Role: !GetAtt ELBLogsLambdaRole.Arn
-      Runtime: nodejs10.x
+      Runtime: nodejs12.x
       Timeout: 300
       Tags:
         - Key: Name
@@ -1059,6 +1068,7 @@ Resources:
   ##############################################################################
   # RDP Admin Security group at VPC level which can be used by private instances
   RDPAdminSecurityGroup:
+    Condition: cPublicNetwork
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Open up Device Management Application ports for private instances
@@ -1274,7 +1284,7 @@ Resources:
   # Public Hostedzone for external ePO URLs
   R53PublicHostedZone:
     Type: AWS::Route53::HostedZone
-    Condition: cNotGovCloudCondition
+    Condition: cCreateR53Resources
     Properties:
       HostedZoneConfig:
         Comment: 'Managed by McAfee Enterprise Security Management'
@@ -1624,21 +1634,25 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-VPCCIDR
   PublicSubnet1ID:
+    Condition: cPublicNetwork
     Description: VPC Public subnet-1 ID
     Value: !Ref PublicSubnet1ID
     Export:
       Name: !Sub ${AWS::StackName}-PublicSubnet1ID
   PublicSubnet1CIDR:
+    Condition: cPublicNetwork
     Description: VPC Public Subnet-1 CIDR
     Value: !GetAtt [ GetVpcDetailsCustom, PublicSubnet1CIDR ]
     Export:
       Name: !Sub ${AWS::StackName}-PublicSubnet1CIDR
   PublicSubnet2ID:
+    Condition: cPublicNetwork
     Description: VPC Public subnet-2 ID
     Value: !Ref PublicSubnet2ID
     Export:
       Name: !Sub ${AWS::StackName}-PublicSubnet2ID
   PublicSubnet2CIDR:
+    Condition: cPublicNetwork
     Description: VPC Public Subnet-2 CIDR
     Value: !GetAtt [ GetVpcDetailsCustom, PublicSubnet2CIDR ]
     Export:
@@ -1664,12 +1678,13 @@ Outputs:
     Export:
       Name: !Sub ${AWS::StackName}-PrivateSubnet2CIDR
   RDPAdminSecurityGroup:
+    Condition: cPublicNetwork
     Description: Security group for device management for private network.
     Value: !Ref RDPAdminSecurityGroup
     Export:
       Name: !Sub ${AWS::StackName}-RDPAdminSecurityGroup
   R53PublicHostedZone:
-    Condition: cNotGovCloudCondition
+    Condition: cCreateR53Resources
     Description: Amazon Route53 Public HostedZone ID
     Value: !Ref R53PublicHostedZone
     Export:
