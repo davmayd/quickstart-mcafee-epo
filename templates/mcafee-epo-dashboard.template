@@ -42,6 +42,7 @@ Metadata:
           default: AWS Quick Start Configuration
         Parameters:
         - QSS3BucketName
+        - QSS3BucketRegion
         - QSS3KeyPrefix
     ParameterLabels:
       Environment:
@@ -86,6 +87,8 @@ Metadata:
         default: Operator Email
       QSS3BucketName:
         default: S3 Bucket Name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
       QSS3KeyPrefix:
         default: S3 Key Prefix
 Parameters:
@@ -203,6 +206,10 @@ Parameters:
       S3 bucket name for the Quick Start assets. Quick Start bucket name can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-).
       It cannot start or end with a hyphen (-) or period (.).
     Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
   QSS3KeyPrefix:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: >-
@@ -221,6 +228,7 @@ Conditions:
     - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
   cNotGovCloudCondition: !Not [ !Condition cGovCloudCondition ]
   cPublicNetwork: !Equals [!Ref PublicNetwork, 'Yes']
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 
 Resources:
   # Update AWS Cloudwatch Dashboard lambda Role
@@ -251,22 +259,9 @@ Resources:
                 Action:
                   - s3:GetObject
                   - s3:ListBucket
-                Resource:
-                  - !Join
-                    - ''
-                    - - !Sub
-                        - 'arn:${Partition}:s3:::'
-                        - Partition:
-                            !If [ cGovCloudCondition, aws-us-gov, aws ]
-                      - !Ref QSS3BucketName
-                  - !Join
-                    - ''
-                    - - !Sub
-                        - 'arn:${Partition}:s3:::'
-                        - Partition:
-                            !If [ cGovCloudCondition, aws-us-gov, aws ]
-                      - !Ref QSS3BucketName
-                      - '/*'
+                Resource: !Sub
+                  - arn:${AWS::Partition}:s3:::${S3Bucket}/${QSS3KeyPrefix}*
+                  - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               - Effect: Allow
                 Action:
                   - cloudwatch:GetDashboard
@@ -278,7 +273,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket: !Ref QSS3BucketName
+        S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
         S3Key: !Sub ${QSS3KeyPrefix}functions/packages/infrastructure/update-dashboard.zip
       Description: Lambda function to update aws cloudwatch dashboard.
       Handler: update-dashboard.handler
@@ -322,7 +317,7 @@ Resources:
     DependsOn: [ DashboardUpdateLambda ]
     Properties:
       ServiceToken:  !GetAtt DashboardUpdateLambda.Arn
-      SourceBucket: !Sub ${QSS3BucketName}
+      SourceBucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
       KeyPrefix: !Sub ${QSS3KeyPrefix}
       DashboardPath: !If
             - cNotGovCloudCondition

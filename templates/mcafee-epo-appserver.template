@@ -62,6 +62,7 @@ Metadata:
           default: AWS Quick Start Configuration
         Parameters:
         - QSS3BucketName
+        - QSS3BucketRegion
         - QSS3KeyPrefix
     ParameterLabels:
       Environment:
@@ -128,6 +129,8 @@ Metadata:
         default: Operator Email
       QSS3BucketName:
         default: S3 Bucket Name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
       QSS3KeyPrefix:
         default: S3 Key Prefix
 Parameters:
@@ -336,6 +339,10 @@ Parameters:
       S3 bucket name for the Quick Start assets. Quick Start bucket name can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-).
       It cannot start or end with a hyphen (-) or period (.).
     Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
   QSS3KeyPrefix:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: >-
@@ -361,6 +368,7 @@ Conditions:
     - !Not [ !Condition cGovCloudCondition ]
     - !Not [ !Condition cPrivateNetwork ]
   cWithProxy: !Not [ !Equals [ !Ref 'WebProxy', '' ] ]
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 
 Rules:
   MatchPassword:
@@ -452,7 +460,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket: !Sub ${QSS3BucketName}
+        S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
         S3Key: !Sub ${QSS3KeyPrefix}functions/packages/modules/epo/sync-epo-instance-parameters.zip
       Description: Lambda function to get ePO instance parameters based on stack persist condtion
       Handler: sync-epo-instance-parameters.handler
@@ -1362,7 +1370,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket: !Sub ${QSS3BucketName}
+        S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
         S3Key: !Sub ${QSS3KeyPrefix}functions/packages/modules/create-ami-backup.zip
       Description: Lambda function that creates AMI's for ASG and vpc-id filters
       Handler: create-ami-backup.handler
@@ -1395,7 +1403,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        S3Bucket: !Sub ${QSS3BucketName}
+        S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
         S3Key: !Sub ${QSS3KeyPrefix}functions/packages/modules/delete-ami-backup.zip
       Description: A Lambda function that cleans up AMI's at their Retention date
       Handler: delete-ami-backup.handler
@@ -1617,7 +1625,7 @@ Resources:
     Condition: cCreateELBCertificate
     Properties:
       Code:
-        S3Bucket: !Sub ${QSS3BucketName}
+        S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
         S3Key: !Sub ${QSS3KeyPrefix}functions/packages/modules/epo/post-epo-deploy.zip
       Description: Lambda function to finish up post deployment epo tasks.
       Handler: post-epo-deploy.handler

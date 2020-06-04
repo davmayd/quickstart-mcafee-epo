@@ -72,6 +72,7 @@ Metadata:
         default: AWS Quick Start Configuration
       Parameters:
       - QSS3BucketName
+      - QSS3BucketRegion
       - QSS3KeyPrefix
     ParameterLabels:
       ProtectedInstances:
@@ -150,6 +151,8 @@ Metadata:
         default: Auto Cleanup
       QSS3BucketName:
         default: S3 Bucket Name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
       QSS3KeyPrefix:
         default: S3 Key Prefix
 Parameters:
@@ -473,6 +476,10 @@ Parameters:
       numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-).
       It cannot start or end with a hyphen (-) or period (.).
     Type: String
+  QSS3BucketRegion:
+    Default: 'us-gov-west-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
   QSS3KeyPrefix:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: >-
@@ -539,6 +546,10 @@ Mappings:
 
     us-gov-east-1:
       MFEBASTIONHVM: ami-0f47a72657789812a
+
+Conditions:
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
+
 Resources:
 
   # Network layer stack to create network resources like VPC, Subnets, NAT, & Routing Table
@@ -570,7 +581,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !Sub ${AWS::StackName}
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-network.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-network.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # Bastion stack for remote management
   Bastion:
@@ -600,7 +614,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !Sub ${AWS::StackName}
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-bastion.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-bastion.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # Workload stack which creates the workload for McAfee ePO platform stack
   McAfeeEPO:
@@ -648,6 +665,7 @@ Resources:
         AdminEmailAddress: !Ref AdminEmailAddress
         AutoCleanup: !Ref AutoCleanup
         QSS3BucketName: !Ref QSS3BucketName
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
@@ -662,7 +680,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !Sub ${AWS::StackName}
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-gov-cloud.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-gov-cloud.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
 Outputs:
   ePOConsoleLBURL:

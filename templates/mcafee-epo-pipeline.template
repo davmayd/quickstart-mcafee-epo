@@ -30,6 +30,7 @@ Metadata:
         Parameters:
           - RegionQSS3BucketName
           - QSS3BucketName
+          - QSS3BucketRegion
           - QSS3KeyPrefix
     ParameterLabels:
       Environment:
@@ -56,6 +57,8 @@ Metadata:
         default: Region S3 Bucket Name
       QSS3BucketName:
         default: S3 Bucket Name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
       QSS3KeyPrefix:
         default: S3 Key Prefix
 Parameters:
@@ -137,6 +140,10 @@ Parameters:
       S3 bucket name for the Quick Start assets. Quick Start bucket name can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-).
       It cannot start or end with a hyphen (-) or period (.).
     Type: String
+  QSS3BucketRegion:
+    Default: 'us-east-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
   QSS3KeyPrefix:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: >-
@@ -154,6 +161,7 @@ Conditions:
   cGovCloudCondition: !Or
     - !Equals [ !Ref 'AWS::Region', us-gov-west-1 ]
     - !Equals [ !Ref 'AWS::Region', us-gov-east-1 ]
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 
 
 Resources:
@@ -172,7 +180,7 @@ Resources:
           Id: !Sub ${ParentStack}-artifacts-syncup
           Input: !Sub >
             {
-              "SourceBucket": "${QSS3BucketName}",
+              "SourceBucket": !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', "${QSS3BucketName}"],
               "DestinationBucket": "${RegionQSS3BucketName}",
               "ArtifactsZIPKey": "assets/pipeline/artifacts/mcafee-artifacts.zip",
               "Prefix": "${QSS3KeyPrefix}",
@@ -230,22 +238,9 @@ Resources:
                   - s3:GetObjectVersion
                   - s3:ListBucket
                   - s3:ListBucketMultipartUploads
-                Resource:
-                  - !Join
-                    - ''
-                    - - !Sub
-                        - 'arn:${Partition}:s3:::'
-                        - Partition:
-                            !If [ cGovCloudCondition, aws-us-gov, aws ]
-                      - !Ref QSS3BucketName
-                  - !Join
-                    - ''
-                    - - !Sub
-                        - 'arn:${Partition}:s3:::'
-                        - Partition:
-                            !If [ cGovCloudCondition, aws-us-gov, aws ]
-                      - !Ref QSS3BucketName
-                      - '/*'
+                Resource: !Sub
+                  - arn:${AWS::Partition}:s3:::${S3Bucket}/${QSS3KeyPrefix}*
+                  - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
               - Effect: Allow
                 Action:
                   - s3:AbortMultipartUpload

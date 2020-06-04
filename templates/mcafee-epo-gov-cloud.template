@@ -71,6 +71,7 @@ Metadata:
         default: AWS Quick Start Configuration
       Parameters:
       - QSS3BucketName
+      - QSS3BucketRegion
       - QSS3KeyPrefix
     ParameterLabels:
       ProtectedInstances:
@@ -149,6 +150,8 @@ Metadata:
         default: Auto Cleanup
       QSS3BucketName:
         default: S3 Bucket Name
+      QSS3BucketRegion:
+        default: Quick Start S3 bucket region
       QSS3KeyPrefix:
         default: S3 Key Prefix
 Parameters:
@@ -443,6 +446,10 @@ Parameters:
       numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-).
       It cannot start or end with a hyphen (-) or period (.).
     Type: String
+  QSS3BucketRegion:
+    Default: 'us-gov-west-1'
+    Description: 'The AWS Region where the Quick Start S3 bucket (QSS3BucketName) is hosted. When using your own bucket, you must specify this value.'
+    Type: String
   QSS3KeyPrefix:
     AllowedPattern: ^[0-9a-zA-Z-/]*$
     ConstraintDescription: >-
@@ -576,6 +583,7 @@ Conditions:
   cCreateDBStack: !Equals [!Ref DBInstanceIdentifier, '']
   cDBDefaultAllocation: !Equals [!Ref DBAllocatedStorage, '']
   cDBInstanceSizeMap1: !Equals [!Ref 'AWS::Region', eu-west-3]
+  UsingDefaultBucket: !Equals [!Ref QSS3BucketName, 'aws-quickstart']
 
 Resources:
 
@@ -597,6 +605,7 @@ Resources:
         AdminEmailAddress: !Ref AdminEmailAddress
         AutoCleanup: !Ref AutoCleanup
         QSS3BucketName: !Ref QSS3BucketName
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
@@ -611,7 +620,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-base.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-base.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # Database stack
   Database:
@@ -662,7 +674,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-database.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-database.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # ePO Application Server Stack
   ePO:
@@ -700,6 +715,7 @@ Resources:
         AHPort: !Ref AHPort
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
@@ -714,7 +730,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-appserver.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-appserver.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # ePO Agent Handler Stack
   AH:
@@ -744,6 +763,7 @@ Resources:
         DBInstanceIdentifier: !GetAtt Base.Outputs.SolutionDBInstanceIdentifier
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
@@ -758,7 +778,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-agenthandler.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-agenthandler.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # Data Exchange Layer Stack
   DXL:
@@ -785,6 +808,7 @@ Resources:
         DXLBuildVersion: 5.0.2.130
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
@@ -799,7 +823,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-dxl.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-dxl.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # pipeline Stack
 
@@ -830,6 +857,7 @@ Resources:
         DXLScaleAlarmARN: !GetAtt DXL.Outputs.DXLBrokerBusyAlarmARN
         AdminEmailAddress: !Ref AdminEmailAddress
         QSS3BucketName: !GetAtt Base.Outputs.SourceStore
+        QSS3BucketRegion: !Ref QSS3BucketRegion
         QSS3KeyPrefix: !Ref QSS3KeyPrefix
       Tags:
       - Key: Name
@@ -844,7 +872,10 @@ Resources:
         Value: McAfee-ePO
       - Key: mcafee:cloudformation:stack-name
         Value: !GetAtt [CheckStackDetailsActionV1, ParentStack]
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-dashboard.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-epo-dashboard.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
 
   ##############################################################################
@@ -970,7 +1001,10 @@ Resources:
         Value: McAfee-ePO-Base-Stack
       - Key: Solution
         Value: McAfee-ePO
-      TemplateURL: !Sub https://${QSS3BucketName}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-utils.template
+      TemplateURL:
+        !Sub 
+          - https://${S3Bucket}.s3-us-gov-west-1.amazonaws.com/${QSS3KeyPrefix}templates/mcafee-utils.template
+          - S3Bucket: !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', !Ref QSS3BucketName]
 
   # Check stack details custom action
   CheckStackDetailsActionV1:
