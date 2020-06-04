@@ -180,7 +180,7 @@ Resources:
           Id: !Sub ${ParentStack}-artifacts-syncup
           Input: !Sub >
             {
-              "SourceBucket": !If [UsingDefaultBucket, !Sub '${QSS3BucketName}-${AWS::Region}', "${QSS3BucketName}"],
+              "SourceBucket": "${QSS3BucketName}",
               "DestinationBucket": "${RegionQSS3BucketName}",
               "ArtifactsZIPKey": "assets/pipeline/artifacts/mcafee-artifacts.zip",
               "Prefix": "${QSS3KeyPrefix}",
